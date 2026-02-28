@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./_components/Navbar";
 import { createClient } from "./_lib/supabase/server";
+import { Analytics } from "@vercel/analytics/next";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -53,6 +55,7 @@ export default async function RootLayout({
       >
         <Navbar user={currentUser} />
         {children}
+        <Analytics />
       </body>
     </html>
   );

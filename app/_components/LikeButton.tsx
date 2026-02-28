@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import { toggleInteraction } from "@/app/_lib/manage-interaction";
 import { useRouter } from "next/navigation";
@@ -17,11 +17,16 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
     const [likesCount, setLikesCount] = useState(initialLikesCount);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
+    // Sync state if parent props change (e.g. on navigation refresh)
     useEffect(() => {
         setIsLiked(initialIsLiked);
         setLikesCount(initialLikesCount);
+    }, [initialIsLiked, initialLikesCount, noteId]);
+
+    // Handle Realtime Subscription
+    useEffect(() => {
 
         const channel = supabase
             .channel(`note_likes_${noteId}`)
@@ -47,7 +52,7 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [initialIsLiked, initialLikesCount, noteId, supabase]);
+    }, [noteId, supabase]);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.preventDefault();

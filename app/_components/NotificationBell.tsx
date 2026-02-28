@@ -66,28 +66,40 @@ export default function NotificationBell({ userId }: { userId: string }) {
         // Fetch initial data on mount
         fetchNotifications();
 
-        // Subscribe to Broadcast events on the user's personal channel.
-        // The notify-user Edge Function (triggered via pg_net) sends
-        // the enriched notification here whenever a new row is inserted.
+        // Subscribe to real-time inserts on the notifications table.
+        // The notifications table is in the supabase_realtime publication,
+        // so postgres_changes works reliably without race conditions.
         const channel = supabase
-            .channel(`notifications:${userId}`)
+            .channel(`notifications-bell-${userId}`)
             .on(
-                'broadcast',
-                { event: 'new_notification' },
-                (event) => {
-                    const newNotif = event.payload as Notification;
-                    if (!newNotif) return;
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${userId}`
+                },
+                async (payload) => {
+                    // Refresh the full list to get enriched actor/note data
+                    await fetchNotifications();
 
-                    // Add new notification to the top of the list
-                    setNotifications(prev => [newNotif, ...prev].slice(0, 5));
-                    // Increment unread badge
-                    setUnreadCount(prev => prev + 1);
-                    // Show toast popup
-                    setToasts(prev => [...prev, newNotif]);
-                    // Auto-remove toast after 6 seconds
-                    setTimeout(() => {
-                        setToasts(prev => prev.filter(t => t.id !== newNotif.id));
-                    }, 6000);
+                    // Also show a toast — fetch the enriched record
+                    const { data: newNotif } = await supabase
+                        .from("notifications")
+                        .select(`
+                            id, is_read, created_at, type,
+                            actor:profiles!notifications_actor_id_fkey(id, username, avatar_url),
+                            note:notes(id, title)
+                        `)
+                        .eq("id", payload.new.id)
+                        .single();
+
+                    if (newNotif) {
+                        setToasts(prev => [...prev, newNotif as unknown as Notification]);
+                        setTimeout(() => {
+                            setToasts(prev => prev.filter(t => t.id !== (newNotif as { id: number }).id));
+                        }, 6000);
+                    }
                 }
             )
             .subscribe();
@@ -97,6 +109,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
+
 
     // Close dropdown on outside click
     useEffect(() => {

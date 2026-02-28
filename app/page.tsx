@@ -1,5 +1,5 @@
 import Link from "next/link";
-import NoteCard from "./_components/NoteCard";
+import NoteFeed from "./_components/NoteFeed";
 import { createClient } from "./_lib/supabase/server";
 
 export default async function Home() {
@@ -142,99 +142,8 @@ export default async function Home() {
           )}
         </div>
 
-        {/* Empty state */}
-        {formattedNotes.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "80px 24px",
-              color: "var(--foreground-muted)",
-            }}
-          >
-            <p style={{ fontSize: "3rem", marginBottom: "16px" }}>📝</p>
-            <h2
-              style={{
-                fontSize: "1.25rem",
-                fontWeight: 600,
-                marginBottom: "8px",
-                color: "var(--foreground)",
-              }}
-            >
-              No notes yet
-            </h2>
-            <p style={{ fontSize: "0.9rem", marginBottom: "24px" }}>
-              {user
-                ? "Be the first to share a note!"
-                : "Login or register to start sharing notes."}
-            </p>
-            {user ? (
-              <Link
-                href="/new_note"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "12px 24px",
-                  borderRadius: "12px",
-                  background:
-                    "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                  color: "white",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                + Write your first note
-              </Link>
-            ) : (
-              <Link
-                href="/register"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "12px 24px",
-                  borderRadius: "12px",
-                  background:
-                    "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                  color: "white",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                Get started
-              </Link>
-            )}
-          </div>
-        )}
-
-        {/* Notes Grid */}
-        {formattedNotes.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {formattedNotes.map((note, index) => (
-              <NoteCard
-                key={note.id}
-                id={note.id}
-                title={note.title}
-                author={note.author}
-                date={note.date}
-                content={note.content}
-                index={index}
-                initialLikesCount={note.likesCount}
-                initialIsLiked={note.isLiked}
-                initialIsSaved={note.isSaved}
-                authorAvatarUrl={note.authorAvatarUrl}
-              />
-            ))}
-          </div>
-        )}
+        {/* Live note feed — client component with real-time subscriptions */}
+        <NoteFeed initialNotes={formattedNotes} userId={user?.id} />
 
         {error && (
           <div

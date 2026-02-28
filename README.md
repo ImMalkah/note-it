@@ -1,5 +1,10 @@
 [Next.js](https://nextjs.org) project
 
+## About
+The codebase for note it!, my personal project for a social media website where users can share notes on a global board.
+
+https://www.noteit.malkahservices.ca/
+
 ## Getting Started
 
 First, run the development server:

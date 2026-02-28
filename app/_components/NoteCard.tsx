@@ -1,0 +1,172 @@
+"use client";
+
+import Link from "next/link";
+
+interface NoteCardProps {
+    id: number;
+    title: string;
+    author: string;
+    date: string;
+    content: string;
+    index: number;
+}
+
+export default function NoteCard({
+    id,
+    title,
+    author,
+    date,
+    content,
+    index,
+}: NoteCardProps) {
+    return (
+        <div
+            className="gradient-border"
+            style={{
+                background: "var(--surface)",
+                borderRadius: "16px",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                animationDelay: `${index * 0.05}s`,
+                cursor: "default",
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow =
+                    "0 20px 40px rgba(0,0,0,0.3), 0 0 30px var(--primary-soft)";
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+            }}
+        >
+            <div style={{ padding: "24px" }}>
+                {/* Title Row */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        marginBottom: "12px",
+                    }}
+                >
+                    <h2
+                        style={{
+                            fontSize: "1.25rem",
+                            fontWeight: 700,
+                            color: "var(--foreground)",
+                            margin: 0,
+                            lineHeight: 1.3,
+                            letterSpacing: "-0.01em",
+                            flex: 1,
+                        }}
+                    >
+                        {title}
+                    </h2>
+
+                    <Link
+                        href={`/note/${id}`}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "10px",
+                            background: "var(--primary-soft)",
+                            color: "var(--primary)",
+                            fontSize: "0.85rem",
+                            transition: "all 0.2s ease",
+                            flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "var(--primary)";
+                            e.currentTarget.style.color = "white";
+                            e.currentTarget.style.transform = "scale(1.05)";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "var(--primary-soft)";
+                            e.currentTarget.style.color = "var(--primary)";
+                            e.currentTarget.style.transform = "scale(1)";
+                        }}
+                        aria-label={`Expand note: ${title}`}
+                    >
+                        ↗
+                    </Link>
+                </div>
+
+                {/* Author */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginBottom: "4px",
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: "0.8rem",
+                            color: "var(--foreground-muted)",
+                            fontWeight: 400,
+                        }}
+                    >
+                        by
+                    </span>
+                    <Link
+                        href={`/profile/${author}`}
+                        className="gradient-text"
+                        style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            transition: "opacity 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+                        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                    >
+                        {author}
+                    </Link>
+                </div>
+
+                {/* Date */}
+                <p
+                    style={{
+                        fontSize: "0.75rem",
+                        color: "var(--foreground-muted)",
+                        margin: 0,
+                        opacity: 0.7,
+                        fontWeight: 400,
+                    }}
+                >
+                    {date}
+                </p>
+
+                {/* Divider */}
+                <div
+                    style={{
+                        height: "1px",
+                        background: "linear-gradient(90deg, var(--border), transparent)",
+                        margin: "16px 0",
+                    }}
+                />
+
+                {/* Content */}
+                <p
+                    style={{
+                        fontSize: "0.9rem",
+                        color: "var(--foreground-muted)",
+                        margin: 0,
+                        lineHeight: 1.65,
+                        fontWeight: 400,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 4,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                    }}
+                >
+                    {content}
+                </p>
+            </div>
+        </div>
+    );
+}

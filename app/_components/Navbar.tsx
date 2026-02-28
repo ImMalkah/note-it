@@ -25,12 +25,13 @@ export default function Navbar({ user }: NavbarProps) {
 
   return (
     <nav
-      className="glass animate-slide-down"
+      className="animate-slide-down"
       style={{
         position: "sticky",
         top: 0,
         zIndex: 50,
         borderBottom: "1px solid var(--border-subtle)",
+        background: "var(--background)",
       }}
     >
       <div

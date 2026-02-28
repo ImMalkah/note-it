@@ -9,24 +9,13 @@ export async function toggleInteraction(action: "like" | "save" | "follow", targ
         throw new Error("You must be logged in to do this.");
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl('');
-    // Ensure we slice out the trailing path to just get the project URL + functions/v1
-    const supabaseUrl = publicUrl.split('/storage/v1')[0];
-    const functionUrl = `${supabaseUrl}/functions/v1/manage-interaction`;
-
-    const response = await fetch(functionUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ action, targetId, isAdding }),
+    const { data, error } = await supabase.functions.invoke('manage-interaction', {
+        body: { action, targetId, isAdding }
     });
 
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Failed to toggle ${action}: ${errText}`);
+    if (error) {
+        throw new Error(`Failed to toggle ${action}: ${error.message}`);
     }
 
-    return await response.json();
+    return data;
 }

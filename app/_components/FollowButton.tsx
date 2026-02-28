@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { toggleInteraction } from "@/app/_lib/manage-interaction";
 
 interface FollowButtonProps {
     targetUserId: string;
@@ -13,11 +14,45 @@ export default function FollowButton({ targetUserId, initialIsFollowing }: Follo
     const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
     useEffect(() => {
         setIsFollowing(initialIsFollowing);
-    }, [initialIsFollowing]);
+    }, [initialIsFollowing, targetUserId]);
+
+    // Handle Realtime Subscription
+    useEffect(() => {
+        const channel = supabase
+            .channel(`user_follows_${targetUserId}`)
+            .on(
+                'broadcast',
+                {
+                    event: 'interaction_update',
+                },
+                async (payload) => {
+                    const { follower_id } = payload.payload;
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const currentUserId = session?.user?.id;
+
+                    // Only update visually if the broadcast was about *this* user toggling
+                    if (currentUserId && follower_id === currentUserId) {
+                        if (payload.payload.eventType === 'INSERT') {
+                            setIsFollowing(true);
+                        } else if (payload.payload.eventType === 'DELETE') {
+                            setIsFollowing(false);
+                        }
+                    } else {
+                        // Optional: trigger a router.refresh() if someone ELSE followed to update external counts on the page
+                        router.refresh();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [targetUserId, supabase, router]);
 
     const handleFollowToggle = async () => {
         if (loading) return;
@@ -26,33 +61,20 @@ export default function FollowButton({ targetUserId, initialIsFollowing }: Follo
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
             router.push("/login");
+            setLoading(false);
             return;
         }
 
-        const currentUserId = session.user.id;
+        // Optimistic UI Update
+        setIsFollowing(!isFollowing);
 
         try {
-            if (isFollowing) {
-                // Unfollow
-                const { error } = await supabase
-                    .from("user_follows")
-                    .delete()
-                    .match({ follower_id: currentUserId, following_id: targetUserId });
-
-                if (error) throw error;
-                setIsFollowing(false);
-            } else {
-                // Follow
-                const { error } = await supabase
-                    .from("user_follows")
-                    .insert({ follower_id: currentUserId, following_id: targetUserId });
-
-                if (error) throw error;
-                setIsFollowing(true);
-            }
-            router.refresh(); // Refresh page to update counts or feed
+            await toggleInteraction("follow", targetUserId, !isFollowing);
+            router.refresh(); // Update the profile counts if necessary
         } catch (error) {
             console.error("Error toggling follow:", error);
+            // Revert optimistic update
+            setIsFollowing(isFollowing);
         } finally {
             setLoading(false);
         }

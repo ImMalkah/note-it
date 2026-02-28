@@ -31,18 +31,16 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
         const channel = supabase
             .channel(`note_likes_${noteId}`)
             .on(
-                'postgres_changes',
+                'broadcast',
                 {
-                    event: '*',
-                    schema: 'public',
-                    table: 'note_likes',
-                    filter: `note_id=eq.${noteId}`
+                    event: 'interaction_update',
                 },
                 (payload) => {
+                    const eventType = payload.payload.eventType;
                     // Update the count based on insert/delete
-                    if (payload.eventType === 'INSERT') {
+                    if (eventType === 'INSERT') {
                         setLikesCount(prev => prev + 1);
-                    } else if (payload.eventType === 'DELETE') {
+                    } else if (eventType === 'DELETE') {
                         setLikesCount(prev => Math.max(0, prev - 1));
                     }
                 }

@@ -1,6 +1,6 @@
 import { createClient } from "./supabase/client";
 
-export async function toggleInteraction(action: "like" | "save", noteId: number, isAdding: boolean) {
+export async function toggleInteraction(action: "like" | "save" | "follow", targetId: number | string, isAdding: boolean) {
     const supabase = createClient();
     
     // Get the current session to get the JWT
@@ -20,7 +20,7 @@ export async function toggleInteraction(action: "like" | "save", noteId: number,
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ action, noteId, isAdding }),
+        body: JSON.stringify({ action, targetId, isAdding }),
     });
 
     if (!response.ok) {

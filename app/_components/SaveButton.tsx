@@ -27,16 +27,17 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
         const channel = supabase
             .channel(`saved_notes_${noteId}`)
             .on(
-                'postgres_changes',
+                'broadcast',
                 {
-                    event: '*',
-                    schema: 'public',
-                    table: 'saved_notes',
-                    filter: `note_id=eq.${noteId}`
+                    event: 'interaction_update',
                 },
-                async () => {
-                    // We don't necessarily update the boolean `isSaved` blindly here, because the local user's boolean status is specific to them.
-                    // The optimistic UI handles their fast response.
+                (payload) => {
+                    const eventType = payload.payload.eventType;
+                    if (eventType === 'INSERT') {
+                        setIsSaved(true);
+                    } else if (eventType === 'DELETE') {
+                        setIsSaved(false);
+                    }
                 }
             )
             .subscribe();

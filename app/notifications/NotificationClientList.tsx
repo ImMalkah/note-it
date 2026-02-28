@@ -116,6 +116,21 @@ export default function NotificationClientList({ userId, initialNotifications }:
                 else timeStr = `${diffDays}d ago`;
 
                 const actor = notif.actor;
+                const actorName = actor?.username || "Someone";
+
+                let actionText = "interacted with";
+                let icon = "🔔";
+
+                if (notif.type === 'like') {
+                    actionText = "liked";
+                    icon = "❤️";
+                } else if (notif.type === 'save') {
+                    actionText = "saved";
+                    icon = "🔖";
+                } else if (notif.type === 'follow') {
+                    actionText = "followed";
+                    icon = "👤";
+                }
 
                 return (
                     <div
@@ -153,7 +168,12 @@ export default function NotificationClientList({ userId, initialNotifications }:
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ margin: "0 0 4px 0", fontSize: "0.95rem", color: "var(--foreground)", lineHeight: 1.4, fontWeight: notif.is_read ? 400 : 700 }}>
-                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span> mentioned you in a note: <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
+                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span> {actionText}{" "}
+                                {notif.type !== 'follow' && notif.note ? (
+                                    <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
+                                ) : notif.type === 'follow' ? (
+                                    "you"
+                                ) : "a note"}
                             </p>
                             <span style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", fontWeight: 500 }}>
                                 {timeStr}

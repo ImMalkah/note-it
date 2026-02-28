@@ -98,34 +98,26 @@ Deno.serve(async (req: Request) => {
             
             // Check target owner to see if notification is warranted
             if (targetOwnerId && targetOwnerId !== userId) {
-                // Determine if a notification of this exact type/note/actor combination already exists today to prevent spam
-                const oneDayAgo = new Date();
-                oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+                const notifPayload: any = {
+                    user_id: targetOwnerId,
+                    actor_id: userId,
+                    type: notifType,
+                };
+                if (action !== "follow") notifPayload.note_id = targetId;
                 
-                let notifMatchQuery = supabase
-                    .from("notifications")
-                    .select("id")
-                    .eq("user_id", targetOwnerId)
-                    .eq("actor_id", userId)
-                    .eq("type", notifType)
-                    .gte("created_at", oneDayAgo.toISOString());
-
-                if (action !== "follow") {
-                    notifMatchQuery = notifMatchQuery.eq("note_id", targetId);
-                }
-                
-                const { data: recentNotifs } = await notifMatchQuery.limit(1);
-
-                // Only create notification if they haven't spammed likes/saves/follows today
-                if (!recentNotifs || recentNotifs.length === 0) {
-                    const notifPayload: any = {
-                        user_id: targetOwnerId,
-                        actor_id: userId,
-                        type: notifType,
-                    };
-                    if (action !== "follow") notifPayload.note_id = targetId;
-                    
-                    await supabase.from("notifications").insert(notifPayload);
+                const { data: insertedNotif, error: notifError } = await supabase.from("notifications").insert(notifPayload).select("id").single();
+                if (notifError) {
+                    console.error("Failed to insert notification:", notifError);
+                } else if (insertedNotif) {
+                    try {
+                        // Explicitly invoke notify-user edge function because service_role inserts
+                        // circumvent user policies and might not trigger Postgres webhooks!
+                        await supabase.functions.invoke("notify-user", {
+                            body: { ...notifPayload, id: insertedNotif.id }
+                        });
+                    } catch (invokeError) {
+                        console.error("Failed to invoke notify-user:", invokeError);
+                    }
                 }
             }
         }

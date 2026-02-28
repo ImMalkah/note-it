@@ -13,9 +13,8 @@ Deno.serve(async (req: Request) => {
   try {
     const payload = await req.json();
 
-    // The payload is the new notification row from pg_net webhook
-    // It's wrapped in a 'record' object: { type: "INSERT", table: "notifications", record: { ... } }
-    const { record } = payload;
+    // Support both pg_net 'record' object and direct row payload
+    const record = payload.record || payload;
     
     if (!record || !record.user_id) {
       return new Response("Missing record or user_id in payload", { status: 400 });

@@ -13,6 +13,7 @@ export interface FormattedNote {
     authorAvatarUrl: string | null;
     date: string;
     likesCount: number;
+    savesCount: number;
     isLiked: boolean;
     isSaved: boolean;
 }
@@ -89,6 +90,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
                             hour12: true,
                         }),
                         likesCount: (note.note_likes as { count: number }[])?.[0]?.count || 0,
+                        savesCount: 0,
                         isLiked,
                         isSaved,
                     };
@@ -170,6 +172,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
                     content={note.content}
                     index={index}
                     initialLikesCount={note.likesCount}
+                    initialSavesCount={note.savesCount}
                     initialIsLiked={note.isLiked}
                     initialIsSaved={note.isSaved}
                     authorAvatarUrl={note.authorAvatarUrl}

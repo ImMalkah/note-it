@@ -76,7 +76,7 @@ export default async function NotePage({ params }: PageProps) {
         >
             <div
                 style={{
-                    maxWidth: "700px",
+                    maxWidth: "900px",
                     margin: "0 auto",
                 }}
             >

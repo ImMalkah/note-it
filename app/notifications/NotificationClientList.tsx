@@ -23,6 +23,7 @@ interface Notification {
 
 export default function NotificationClientList({ userId, initialNotifications }: { userId: string, initialNotifications: Notification[] }) {
     const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+    const [markingAll, setMarkingAll] = useState(false);
     const supabase = createClient();
     const router = useRouter();
 
@@ -60,6 +61,19 @@ export default function NotificationClientList({ userId, initialNotifications }:
         } else if (notif.note) {
             router.push(`/note/${notif.note.id}`);
         }
+    };
+
+    const handleMarkAllRead = async () => {
+        const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+        if (unreadIds.length === 0) return;
+        setMarkingAll(true);
+        // Optimistic update
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        await supabase
+            .from("notifications")
+            .update({ is_read: true })
+            .in("id", unreadIds);
+        setMarkingAll(false);
     };
 
     useEffect(() => {
@@ -101,6 +115,46 @@ export default function NotificationClientList({ userId, initialNotifications }:
 
     return (
         <div style={{ display: "flex", flexDirection: "column" }}>
+            {/* Header bar with Mark All Read */}
+            {notifications.some(n => !n.is_read) && (
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    padding: "12px 20px",
+                    borderBottom: "1px solid var(--border-subtle)",
+                }}>
+                    <button
+                        onClick={handleMarkAllRead}
+                        disabled={markingAll}
+                        style={{
+                            padding: "6px 16px",
+                            borderRadius: "20px",
+                            border: "1px solid var(--primary)",
+                            background: "transparent",
+                            color: "var(--primary)",
+                            fontSize: "0.8rem",
+                            fontWeight: 600,
+                            cursor: markingAll ? "default" : "pointer",
+                            opacity: markingAll ? 0.5 : 1,
+                            transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!markingAll) {
+                                e.currentTarget.style.background = "var(--primary)";
+                                e.currentTarget.style.color = "white";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!markingAll) {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "var(--primary)";
+                            }
+                        }}
+                    >
+                        {markingAll ? "Marking..." : "Mark all as read"}
+                    </button>
+                </div>
+            )}
             {notifications.map((notif, i) => {
                 const isLast = i === notifications.length - 1;
 

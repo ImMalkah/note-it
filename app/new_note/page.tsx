@@ -99,7 +99,7 @@ export default function NewNotePage() {
                     borderRadius: "16px",
                     padding: "40px",
                     width: "100%",
-                    maxWidth: "600px",
+                    maxWidth: "800px",
                 }}
             >
                 <div

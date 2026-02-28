@@ -185,8 +185,9 @@ export default async function ProfilePage({ params }: PageProps) {
         >
             <div
                 style={{
-                    maxWidth: "900px",
+                    maxWidth: "1100px",
                     margin: "0 auto",
+                    padding: "40px 24px 80px",
                 }}
             >
                 {/* Back link */}

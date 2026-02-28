@@ -105,19 +105,9 @@ Deno.serve(async (req: Request) => {
                 };
                 if (action !== "follow") notifPayload.note_id = targetId;
                 
-                const { data: insertedNotif, error: notifError } = await supabase.from("notifications").insert(notifPayload).select("id").single();
+                const { error: notifError } = await supabase.from("notifications").insert(notifPayload);
                 if (notifError) {
                     console.error("Failed to insert notification:", notifError);
-                } else if (insertedNotif) {
-                    try {
-                        // Explicitly invoke notify-user edge function because service_role inserts
-                        // circumvent user policies and might not trigger Postgres webhooks!
-                        await supabase.functions.invoke("notify-user", {
-                            body: { ...notifPayload, id: insertedNotif.id }
-                        });
-                    } catch (invokeError) {
-                        console.error("Failed to invoke notify-user:", invokeError);
-                    }
                 }
             }
         }

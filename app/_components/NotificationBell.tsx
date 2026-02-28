@@ -72,33 +72,38 @@ export default function NotificationBell({ userId }: { userId: string }) {
         const channel = supabase
             .channel(`notifications-bell-${userId}`)
             .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${userId}`
-                },
+                'broadcast',
+                { event: 'new_notification' },
                 async (payload) => {
                     // Refresh the full list to get enriched actor/note data
                     await fetchNotifications();
 
-                    // Also show a toast — fetch the enriched record
-                    const { data: newNotif } = await supabase
-                        .from("notifications")
-                        .select(`
-                            id, is_read, created_at, type,
-                            actor:profiles!notifications_actor_id_fkey(id, username, avatar_url),
-                            note:notes(id, title)
-                        `)
-                        .eq("id", payload.new.id)
-                        .single();
+                    // The Edge Function already enriches the notification payload!
+                    const newNotif = payload.payload as unknown as Notification;
 
-                    if (newNotif) {
-                        setToasts(prev => [...prev, newNotif as unknown as Notification]);
+                    if (newNotif && newNotif.actor) {
+                        setToasts(prev => [...prev, newNotif]);
                         setTimeout(() => {
-                            setToasts(prev => prev.filter(t => t.id !== (newNotif as { id: number }).id));
+                            setToasts(prev => prev.filter(t => t.id !== newNotif.id));
                         }, 6000);
+                    } else if (newNotif) {
+                        // Fallback in case the edge function couldn't enrich it
+                        const { data: fetchedNotif } = await supabase
+                            .from("notifications")
+                            .select(`
+                                id, is_read, created_at, type,
+                                actor:profiles!notifications_actor_id_fkey(id, username, avatar_url),
+                                note:notes(id, title)
+                            `)
+                            .eq("id", newNotif.id)
+                            .single();
+
+                        if (fetchedNotif) {
+                            setToasts(prev => [...prev, fetchedNotif as unknown as Notification]);
+                            setTimeout(() => {
+                                setToasts(prev => prev.filter(t => t.id !== (fetchedNotif as { id: number }).id));
+                            }, 6000);
+                        }
                     }
                 }
             )

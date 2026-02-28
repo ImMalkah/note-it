@@ -66,17 +66,18 @@ export default function NotificationClientList({ userId, initialNotifications }:
         const channel = supabase
             .channel(`public:notifications_page:user_id=eq.${userId}`)
             .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${userId}`
-                },
+                'broadcast',
+                { event: 'new_notification' },
                 async (payload) => {
-                    const newNotif = await fetchSingleNotification(payload.new.id);
-                    if (newNotif) {
+                    const newNotif = payload.payload as unknown as Notification;
+
+                    if (newNotif && newNotif.actor) {
                         setNotifications(prev => [newNotif, ...prev]);
+                    } else if (newNotif) {
+                        const fetched = await fetchSingleNotification(newNotif.id);
+                        if (fetched) {
+                            setNotifications(prev => [fetched, ...prev]);
+                        }
                     }
                 }
             )

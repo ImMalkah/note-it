@@ -27,6 +27,11 @@ export default function NotificationBell({ userId }: { userId: string }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [toasts, setToasts] = useState<Notification[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const supabase = createClient();
     const pathname = usePathname();
@@ -298,7 +303,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
             )}
 
             {/* Float Toasts for new notifications */}
-            {typeof window !== 'undefined' && createPortal(
+            {mounted && createPortal(
                 <div style={{
                     position: "fixed",
                     bottom: "24px",

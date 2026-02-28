@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import NoteCard from "@/app/_components/NoteCard";
 import FollowButton from "@/app/_components/FollowButton";
 import ProfileTabs from "@/app/_components/ProfileTabs";
+import ProfileFollowCounts from "./ProfileFollowCounts";
 
 interface PageProps {
     params: Promise<{ username: string }>;
@@ -255,10 +256,11 @@ export default async function ProfilePage({ params }: PageProps) {
                             >
                                 Member since {memberSince}
                             </p>
-                            <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem", color: "var(--foreground)" }}>
-                                <span><strong>{followersCount}</strong> Followers</span>
-                                <span><strong>{followingCount}</strong> Following</span>
-                            </div>
+                            <ProfileFollowCounts
+                                profileId={profile.id}
+                                followersCount={followersCount}
+                                followingCount={followingCount}
+                            />
                         </div>
                     </div>
 

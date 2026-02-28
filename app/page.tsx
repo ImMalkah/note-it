@@ -18,7 +18,8 @@ export default async function Home() {
       content, 
       created_at, 
       profiles!notes_author_id_fkey(username, avatar_url),
-      note_likes(count)
+      note_likes(count),
+      saved_notes(count)
     `)
     .order("created_at", { ascending: false });
 
@@ -60,6 +61,7 @@ export default async function Home() {
         hour12: true,
       }),
       likesCount: (note.note_likes as any)?.[0]?.count || 0,
+      savesCount: (note.saved_notes as any)?.[0]?.count || 0,
       isLiked: userLikes.has(note.id as number),
       isSaved: userSaves.has(note.id as number),
     };

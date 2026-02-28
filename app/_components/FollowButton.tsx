@@ -8,9 +8,10 @@ import { toggleInteraction } from "@/app/_lib/manage-interaction";
 interface FollowButtonProps {
     targetUserId: string;
     initialIsFollowing: boolean;
+    isFollower?: boolean;
 }
 
-export default function FollowButton({ targetUserId, initialIsFollowing }: FollowButtonProps) {
+export default function FollowButton({ targetUserId, initialIsFollowing, isFollower = false }: FollowButtonProps) {
     const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -110,7 +111,7 @@ export default function FollowButton({ targetUserId, initialIsFollowing }: Follo
                 }
             }}
         >
-            {isFollowing ? "Following" : "Follow"}
+            {isFollowing ? "Following" : (isFollower ? "Follow Back" : "Follow")}
         </button>
     );
 }

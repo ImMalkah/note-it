@@ -8,10 +8,12 @@ import { useRouter } from "next/navigation";
 interface SaveButtonProps {
     noteId: number;
     initialIsSaved: boolean;
+    initialSavesCount: number;
 }
 
-export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) {
+export default function SaveButton({ noteId, initialIsSaved, initialSavesCount }: SaveButtonProps) {
     const [isSaved, setIsSaved] = useState(initialIsSaved);
+    const [savesCount, setSavesCount] = useState(initialSavesCount);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
@@ -19,7 +21,8 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
     // Sync state if parent props change (e.g. on navigation refresh)
     useEffect(() => {
         setIsSaved(initialIsSaved);
-    }, [initialIsSaved, noteId]);
+        setSavesCount(initialSavesCount);
+    }, [initialIsSaved, initialSavesCount, noteId]);
 
     // Handle Realtime Subscription
     useEffect(() => {
@@ -31,12 +34,16 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
                 {
                     event: 'interaction_update',
                 },
-                (payload) => {
+                (payload: any) => {
                     const eventType = payload.payload.eventType;
+                    const newCount = payload.payload.newCount;
+
                     if (eventType === 'INSERT') {
                         setIsSaved(true);
+                        if (newCount !== undefined) setSavesCount(newCount);
                     } else if (eventType === 'DELETE') {
                         setIsSaved(false);
+                        if (newCount !== undefined) setSavesCount(newCount);
                     }
                 }
             )
@@ -65,6 +72,7 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
         try {
             // Optimistic update
             setIsSaved(!isSaved);
+            setSavesCount((prev) => (isSaved ? Math.max(0, prev - 1) : prev + 1));
 
             if (isSaved) {
                 // Unsave
@@ -77,6 +85,7 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
             console.error("Error toggling save:", error);
             // Revert optimistic update
             setIsSaved(isSaved);
+            setSavesCount((prev) => (!isSaved ? Math.max(0, prev - 1) : prev + 1));
         } finally {
             setLoading(false);
         }
@@ -113,6 +122,9 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
             }}
         >
             <i className={isSaved ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark"}></i>
+            <span style={{ fontSize: "0.85rem", fontWeight: 600, marginLeft: "6px" }}>
+                {savesCount}
+            </span>
         </button>
     );
 }

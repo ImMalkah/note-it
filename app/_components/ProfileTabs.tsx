@@ -13,6 +13,7 @@ interface Note {
     authorAvatarUrl?: string | null;
     date: string;
     likesCount: number;
+    savesCount: number;
 }
 
 interface ProfileTabsProps {
@@ -21,7 +22,6 @@ interface ProfileTabsProps {
     savedNotes: Note[];
     likedNotes: Note[];
     isOwnProfile: boolean;
-    savedVisible: boolean;
     likedVisible: boolean;
     userLikes: Set<number>;
     userSaves: Set<number>;
@@ -33,7 +33,6 @@ export default function ProfileTabs({
     savedNotes,
     likedNotes,
     isOwnProfile,
-    savedVisible,
     likedVisible,
     userLikes,
     userSaves
@@ -42,7 +41,6 @@ export default function ProfileTabs({
     const [activeTab, setActiveTab] = useState("notes");
 
     // For updating visibility settings
-    const [isSavedVisible, setIsSavedVisible] = useState(savedVisible);
     const [isLikedVisible, setIsLikedVisible] = useState(likedVisible);
     const [loadingSettings, setLoadingSettings] = useState(false);
 
@@ -59,7 +57,6 @@ export default function ProfileTabs({
                 .eq("id", session.user.id);
 
             if (!error) {
-                if (field === "saved_notes_visible") setIsSavedVisible(!currentValue);
                 if (field === "liked_notes_visible") setIsLikedVisible(!currentValue);
                 router.refresh();
             }
@@ -95,6 +92,7 @@ export default function ProfileTabs({
                         content={note.content}
                         index={index}
                         initialLikesCount={note.likesCount}
+                        initialSavesCount={note.savesCount}
                         initialIsLiked={userLikes.has(note.id)}
                         initialIsSaved={userSaves.has(note.id)}
                         authorAvatarUrl={note.authorAvatarUrl}
@@ -123,7 +121,7 @@ export default function ProfileTabs({
                     Notes
                 </button>
 
-                {(isOwnProfile || isSavedVisible) && (
+                {isOwnProfile && (
                     <button
                         onClick={() => setActiveTab("saved")}
                         style={{
@@ -155,20 +153,6 @@ export default function ProfileTabs({
             </div>
 
             {/* Tab Context / Settings */}
-            {isOwnProfile && activeTab === "saved" && (
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "var(--foreground-muted)", cursor: "pointer" }}>
-                        <input
-                            type="checkbox"
-                            checked={isSavedVisible}
-                            disabled={loadingSettings}
-                            onChange={() => handleToggleSetting("saved_notes_visible", isSavedVisible)}
-                        />
-                        Make Saved Notes Public
-                    </label>
-                </div>
-            )}
-
             {isOwnProfile && activeTab === "liked" && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "var(--foreground-muted)", cursor: "pointer" }}>

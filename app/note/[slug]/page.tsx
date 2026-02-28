@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/app/_lib/supabase/server";
 import { notFound } from "next/navigation";
 import DeleteNoteButton from "./DeleteNoteButton";
+import LikeButton from "@/app/_components/LikeButton";
+import SaveButton from "@/app/_components/SaveButton";
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -19,7 +21,7 @@ export default async function NotePage({ params }: PageProps) {
 
     const { data: note, error } = await supabase
         .from("notes")
-        .select("id, title, content, created_at, author_id, profiles!notes_author_id_fkey(username, avatar_url)")
+        .select("id, title, content, created_at, author_id, profiles!notes_author_id_fkey(username, avatar_url), note_likes(count), saved_notes(count)")
         .eq("id", noteId)
         .single();
 
@@ -35,6 +37,21 @@ export default async function NotePage({ params }: PageProps) {
     const authorName = profile?.username || "unknown";
     const authorAvatarUrl = profile?.avatar_url || null;
     const isAuthor = user?.id === note.author_id;
+
+    let isLiked = false;
+    let isSaved = false;
+
+    if (user) {
+        const [likesRes, savesRes] = await Promise.all([
+            supabase.from("note_likes").select("note_id").eq("user_id", user.id).eq("note_id", noteId).single(),
+            supabase.from("saved_notes").select("note_id").eq("user_id", user.id).eq("note_id", noteId).single()
+        ]);
+        if (likesRes.data) isLiked = true;
+        if (savesRes.data) isSaved = true;
+    }
+
+    const likesCount = (note.note_likes as any)?.[0]?.count || 0;
+    const savesCount = (note.saved_notes as any)?.[0]?.count || 0;
 
     const formattedDate = new Date(note.created_at as string).toLocaleDateString(
         "en-US",
@@ -175,6 +192,29 @@ export default async function NotePage({ params }: PageProps) {
                         }}
                     >
                         {note.content}
+                    </div>
+
+                    {/* Footer Interactions */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginTop: "32px",
+                            paddingTop: "16px",
+                            borderTop: "1px solid var(--border-subtle)",
+                        }}
+                    >
+                        <LikeButton
+                            noteId={noteId}
+                            initialLikesCount={likesCount}
+                            initialIsLiked={isLiked}
+                        />
+                        <SaveButton
+                            noteId={noteId}
+                            initialIsSaved={isSaved}
+                            initialSavesCount={savesCount}
+                        />
                     </div>
 
                     {/* Delete Button (only for author) */}

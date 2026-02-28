@@ -55,7 +55,9 @@ export default function NotificationClientList({ userId, initialNotifications }:
                 .eq("id", notif.id);
         }
 
-        if (notif.note) {
+        if (notif.type === 'follow' && notif.actor) {
+            router.push(`/profile/${notif.actor.username}`);
+        } else if (notif.note) {
             router.push(`/note/${notif.note.id}`);
         }
     };

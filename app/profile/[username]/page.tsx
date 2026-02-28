@@ -38,8 +38,9 @@ export default async function ProfilePage({ params }: PageProps) {
     const followersCount = followersRes.count || 0;
     const followingCount = followingRes.count || 0;
 
-    // Check if current user is following this profile
+    // Check if current user is following this profile, and if this profile is following the current user
     let isFollowing = false;
+    let isFollower = false;
     if (user && !isOwnProfile) {
         const { data } = await supabase
             .from("user_follows")
@@ -47,12 +48,19 @@ export default async function ProfilePage({ params }: PageProps) {
             .match({ follower_id: user.id, following_id: profile.id })
             .single();
         if (data) isFollowing = true;
+
+        const { data: followerData } = await supabase
+            .from("user_follows")
+            .select("follower_id")
+            .match({ follower_id: profile.id, following_id: user.id })
+            .single();
+        if (followerData) isFollower = true;
     }
 
     // Fetch their notes
     const { data: notes } = await supabase
         .from("notes")
-        .select("id, title, content, created_at, note_likes(count)")
+        .select("id, title, content, created_at, note_likes(count), saved_notes(count)")
         .eq("author_id", profile.id)
         .order("created_at", { ascending: false });
 
@@ -70,16 +78,17 @@ export default async function ProfilePage({ params }: PageProps) {
             hour12: true,
         }),
         likesCount: (note.note_likes as any)?.[0]?.count || 0,
+        savesCount: (note.saved_notes as any)?.[0]?.count || 0,
     }));
 
-    // Fetch Saved Notes if visible or own profile
+    // Fetch Saved Notes strictly if own profile
     let savedNotes: any[] = [];
-    if (isOwnProfile || profile.saved_notes_visible) {
+    if (isOwnProfile) {
         const { data: saves } = await supabase
             .from("saved_notes")
             .select(`
                 note_id,
-                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count))
+                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count), saved_notes(count))
             `)
             .eq("user_id", profile.id)
             .order("created_at", { ascending: false });
@@ -98,6 +107,7 @@ export default async function ProfilePage({ params }: PageProps) {
                         hour: "2-digit", minute: "2-digit", hour12: true,
                     }),
                     likesCount: n.note_likes?.[0]?.count || 0,
+                    savesCount: n.saved_notes?.[0]?.count || 0,
                 };
             });
     }
@@ -109,7 +119,7 @@ export default async function ProfilePage({ params }: PageProps) {
             .from("note_likes")
             .select(`
                 note_id,
-                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count))
+                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count), saved_notes(count))
             `)
             .eq("user_id", profile.id)
             .order("created_at", { ascending: false });
@@ -128,6 +138,7 @@ export default async function ProfilePage({ params }: PageProps) {
                         hour: "2-digit", minute: "2-digit", hour12: true,
                     }),
                     likesCount: n.note_likes?.[0]?.count || 0,
+                    savesCount: n.saved_notes?.[0]?.count || 0,
                 };
             });
     }
@@ -287,7 +298,7 @@ export default async function ProfilePage({ params }: PageProps) {
                         {isOwnProfile ? (
                             <EditProfileButton currentBio={profile.bio} currentAvatarUrl={profile.avatar_url} userId={profile.id} />
                         ) : user && (
-                            <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} />
+                            <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
                         )}
                     </div>
                 </div>
@@ -299,7 +310,6 @@ export default async function ProfilePage({ params }: PageProps) {
                     savedNotes={savedNotes}
                     likedNotes={likedNotes}
                     isOwnProfile={isOwnProfile}
-                    savedVisible={profile.saved_notes_visible}
                     likedVisible={profile.liked_notes_visible}
                     userLikes={userLikes}
                     userSaves={userSaves}

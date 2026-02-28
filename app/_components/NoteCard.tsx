@@ -15,6 +15,7 @@ interface NoteCardProps {
     initialLikesCount?: number;
     initialIsLiked?: boolean;
     initialIsSaved?: boolean;
+    initialSavesCount?: number;
     authorAvatarUrl?: string | null;
 }
 export default function NoteCard({
@@ -27,6 +28,7 @@ export default function NoteCard({
     initialLikesCount = 0,
     initialIsLiked = false,
     initialIsSaved = false,
+    initialSavesCount = 0,
     authorAvatarUrl,
 }: NoteCardProps) {
     // Function to parse content and turn @username into links
@@ -224,6 +226,7 @@ export default function NoteCard({
                     <SaveButton
                         noteId={id}
                         initialIsSaved={initialIsSaved}
+                        initialSavesCount={initialSavesCount}
                     />
                 </div>
             </div>

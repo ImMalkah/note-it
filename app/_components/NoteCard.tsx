@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import React from 'react';
+import LikeButton from "./LikeButton";
+import SaveButton from "./SaveButton";
 
 interface NoteCardProps {
     id: number;
@@ -9,8 +12,10 @@ interface NoteCardProps {
     date: string;
     content: string;
     index: number;
+    initialLikesCount?: number;
+    initialIsLiked?: boolean;
+    initialIsSaved?: boolean;
 }
-
 export default function NoteCard({
     id,
     title,
@@ -18,7 +23,31 @@ export default function NoteCard({
     date,
     content,
     index,
+    initialLikesCount = 0,
+    initialIsLiked = false,
+    initialIsSaved = false,
 }: NoteCardProps) {
+    // Function to parse content and turn @username into links
+    const renderContentWithMentions = (text: string) => {
+        const parts = text.split(/(@[a-zA-Z0-9_]+)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('@')) {
+                const username = part.slice(1);
+                return (
+                    <Link
+                        key={i}
+                        href={`/profile/${username}`}
+                        className="gradient-text"
+                        style={{ fontWeight: 600 }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </Link>
+                );
+            }
+            return <React.Fragment key={i}>{part}</React.Fragment>;
+        });
+    };
     return (
         <div
             className="gradient-border"
@@ -151,7 +180,7 @@ export default function NoteCard({
                 />
 
                 {/* Content */}
-                <p
+                <div
                     style={{
                         fontSize: "0.9rem",
                         color: "var(--foreground-muted)",
@@ -164,8 +193,30 @@ export default function NoteCard({
                         overflow: "hidden",
                     }}
                 >
-                    {content}
-                </p>
+                    {renderContentWithMentions(content)}
+                </div>
+
+                {/* Footer Interactions */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginTop: "16px",
+                        paddingTop: "12px",
+                        borderTop: "1px solid var(--border-subtle)",
+                    }}
+                >
+                    <LikeButton
+                        noteId={id}
+                        initialLikesCount={initialLikesCount}
+                        initialIsLiked={initialIsLiked}
+                    />
+                    <SaveButton
+                        noteId={id}
+                        initialIsSaved={initialIsSaved}
+                    />
+                </div>
             </div>
         </div>
     );

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/app/_lib/supabase/server";
 import { notFound } from "next/navigation";
 import NoteCard from "@/app/_components/NoteCard";
+import FollowButton from "@/app/_components/FollowButton";
+import ProfileTabs from "./ProfileTabs";
 
 interface PageProps {
     params: Promise<{ username: string }>;
@@ -14,7 +16,7 @@ export default async function ProfilePage({ params }: PageProps) {
     // Fetch the profile
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, created_at")
+        .select("id, username, created_at, saved_notes_visible, liked_notes_visible")
         .eq("username", username)
         .single();
 
@@ -22,10 +24,33 @@ export default async function ProfilePage({ params }: PageProps) {
         notFound();
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const isOwnProfile = user?.id === profile.id;
+
+    // Fetch Follow Counts
+    const [followersRes, followingRes] = await Promise.all([
+        supabase.from("user_follows").select("follower_id", { count: 'exact', head: true }).eq("following_id", profile.id),
+        supabase.from("user_follows").select("following_id", { count: 'exact', head: true }).eq("follower_id", profile.id)
+    ]);
+
+    const followersCount = followersRes.count || 0;
+    const followingCount = followingRes.count || 0;
+
+    // Check if current user is following this profile
+    let isFollowing = false;
+    if (user && !isOwnProfile) {
+        const { data } = await supabase
+            .from("user_follows")
+            .select("follower_id")
+            .match({ follower_id: user.id, following_id: profile.id })
+            .single();
+        if (data) isFollowing = true;
+    }
+
     // Fetch their notes
     const { data: notes } = await supabase
         .from("notes")
-        .select("id, title, content, created_at")
+        .select("id, title, content, created_at, note_likes(count)")
         .eq("author_id", profile.id)
         .order("created_at", { ascending: false });
 
@@ -42,7 +67,92 @@ export default async function ProfilePage({ params }: PageProps) {
             minute: "2-digit",
             hour12: true,
         }),
+        likesCount: (note.note_likes as any)?.[0]?.count || 0,
     }));
+
+    // Fetch Saved Notes if visible or own profile
+    let savedNotes: any[] = [];
+    if (isOwnProfile || profile.saved_notes_visible) {
+        const { data: saves } = await supabase
+            .from("saved_notes")
+            .select(`
+                note_id,
+                notes (id, title, content, created_at, profiles(username), note_likes(count))
+            `)
+            .eq("user_id", profile.id)
+            .order("created_at", { ascending: false });
+
+        savedNotes = (saves || [])
+            .filter(s => s.notes) // ensure note still exists
+            .map(s => {
+                const n = s.notes as any;
+                return {
+                    id: n.id,
+                    title: n.title,
+                    content: n.content,
+                    author: n.profiles?.username || "unknown",
+                    date: new Date(n.created_at).toLocaleDateString("en-US", {
+                        year: "numeric", month: "long", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit", hour12: true,
+                    }),
+                    likesCount: n.note_likes?.[0]?.count || 0,
+                };
+            });
+    }
+
+    // Fetch Liked Notes if visible or own profile
+    let likedNotes: any[] = [];
+    if (isOwnProfile || profile.liked_notes_visible) {
+        const { data: likes } = await supabase
+            .from("note_likes")
+            .select(`
+                note_id,
+                notes (id, title, content, created_at, profiles(username), note_likes(count))
+            `)
+            .eq("user_id", profile.id)
+            .order("created_at", { ascending: false });
+
+        likedNotes = (likes || [])
+            .filter(l => l.notes)
+            .map(l => {
+                const n = l.notes as any;
+                return {
+                    id: n.id,
+                    title: n.title,
+                    content: n.content,
+                    author: n.profiles?.username || "unknown",
+                    date: new Date(n.created_at).toLocaleDateString("en-US", {
+                        year: "numeric", month: "long", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit", hour12: true,
+                    }),
+                    likesCount: n.note_likes?.[0]?.count || 0,
+                };
+            });
+    }
+
+    // User's specific likes/saves for NoteCard states
+    let userLikes = new Set<number>();
+    let userSaves = new Set<number>();
+
+    if (user) {
+        // Collect all note IDs on page
+        const allIds = new Set([
+            ...formattedNotes.map(n => n.id),
+            ...savedNotes.map(n => n.id),
+            ...likedNotes.map(n => n.id),
+        ]);
+        const idArray = Array.from(allIds);
+
+        if (idArray.length > 0) {
+            const [likesRes, savesRes] = await Promise.all([
+                supabase.from("note_likes").select("note_id").eq("user_id", user.id).in("note_id", idArray),
+                supabase.from("saved_notes").select("note_id").eq("user_id", user.id).in("note_id", idArray)
+            ]);
+
+            if (likesRes.data) likesRes.data.forEach(l => userLikes.add(l.note_id));
+            if (savesRes.data) savesRes.data.forEach(s => userSaves.add(s.note_id));
+        }
+    }
 
     const memberSince = new Date(
         profile.created_at as string
@@ -143,62 +253,34 @@ export default async function ProfilePage({ params }: PageProps) {
                                     margin: "4px 0 0",
                                 }}
                             >
-                                Member since {memberSince} · {formattedNotes.length} note
-                                {formattedNotes.length !== 1 ? "s" : ""}
+                                Member since {memberSince}
                             </p>
+                            <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem", color: "var(--foreground)" }}>
+                                <span><strong>{followersCount}</strong> Followers</span>
+                                <span><strong>{followingCount}</strong> Following</span>
+                            </div>
                         </div>
                     </div>
+
+                    {!isOwnProfile && user && (
+                        <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
+                            <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} />
+                        </div>
+                    )}
                 </div>
 
-                {/* Notes */}
-                <h2
-                    style={{
-                        fontSize: "1.25rem",
-                        fontWeight: 700,
-                        color: "var(--foreground)",
-                        marginBottom: "20px",
-                    }}
-                >
-                    Notes by {profile.username}
-                </h2>
-
-                {formattedNotes.length === 0 ? (
-                    <div
-                        style={{
-                            textAlign: "center",
-                            padding: "60px 24px",
-                            color: "var(--foreground-muted)",
-                            background: "var(--surface)",
-                            borderRadius: "16px",
-                            border: "1px solid var(--border-subtle)",
-                        }}
-                    >
-                        <p style={{ fontSize: "2rem", marginBottom: "12px" }}>📝</p>
-                        <p style={{ fontSize: "0.9rem" }}>
-                            {profile.username} hasn&apos;t written any notes yet.
-                        </p>
-                    </div>
-                ) : (
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-                            gap: "20px",
-                        }}
-                    >
-                        {formattedNotes.map((note, index) => (
-                            <NoteCard
-                                key={note.id}
-                                id={note.id}
-                                title={note.title}
-                                author={note.author}
-                                date={note.date}
-                                content={note.content}
-                                index={index}
-                            />
-                        ))}
-                    </div>
-                )}
+                {/* Tabs Component to toggle between Notes, Saved, Liked */}
+                <ProfileTabs
+                    username={profile.username}
+                    notes={formattedNotes}
+                    savedNotes={savedNotes}
+                    likedNotes={likedNotes}
+                    isOwnProfile={isOwnProfile}
+                    savedVisible={profile.saved_notes_visible}
+                    likedVisible={profile.liked_notes_visible}
+                    userLikes={userLikes}
+                    userSaves={userSaves}
+                />
             </div>
         </div>
     );

@@ -5,14 +5,43 @@ import { createClient } from "./_lib/supabase/server";
 export default async function Home() {
   const supabase = await createClient();
 
-  const { data: notes, error } = await supabase
-    .from("notes")
-    .select("id, title, content, created_at, profiles(username)")
-    .order("created_at", { ascending: false });
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Basic query
+  let query = supabase
+    .from("notes")
+    .select(`
+      id, 
+      title, 
+      content, 
+      created_at, 
+      profiles(username),
+      note_likes(count)
+    `)
+    .order("created_at", { ascending: false });
+
+  // If user is logged in, only fetch notes from followed users
+  // (Assuming home page is a feed. If no follows exist, it will be empty)
+  // For now, let's just show all notes, but pass down like/save status
+  const { data: notes, error } = await query;
+
+  // If logged in, fetch the user's specific likes and saves to pass to the client components
+  let userLikes = new Set<number>();
+  let userSaves = new Set<number>();
+
+  if (user && notes) {
+    const noteIds = notes.map(n => n.id);
+
+    const [likesRes, savesRes] = await Promise.all([
+      supabase.from("note_likes").select("note_id").eq("user_id", user.id).in("note_id", noteIds),
+      supabase.from("saved_notes").select("note_id").eq("user_id", user.id).in("note_id", noteIds)
+    ]);
+
+    if (likesRes.data) likesRes.data.forEach(l => userLikes.add(l.note_id));
+    if (savesRes.data) savesRes.data.forEach(s => userSaves.add(s.note_id));
+  }
 
   const formattedNotes = (notes || []).map((note) => {
     const profile = note.profiles as unknown as { username: string } | null;
@@ -29,6 +58,9 @@ export default async function Home() {
         minute: "2-digit",
         hour12: true,
       }),
+      likesCount: (note.note_likes as any)?.[0]?.count || 0,
+      isLiked: userLikes.has(note.id as number),
+      isSaved: userSaves.has(note.id as number),
     };
   });
 
@@ -194,6 +226,9 @@ export default async function Home() {
                 date={note.date}
                 content={note.content}
                 index={index}
+                initialLikesCount={note.likesCount}
+                initialIsLiked={note.isLiked}
+                initialIsSaved={note.isSaved}
               />
             ))}
           </div>

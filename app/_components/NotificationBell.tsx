@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/app/_lib/supabase/client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -272,7 +273,11 @@ export default function NotificationBell({ userId }: { userId: string }) {
                                         )}
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <p style={{ margin: "0 0 4px 0", fontSize: "0.9rem", color: "var(--foreground)", lineHeight: 1.4, fontWeight: isUnread ? 700 : 400 }}>
-                                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span> mentioned you in a note: <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
+                                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span>
+                                                {notif.type === 'mention' ? ' mentioned you in a note: ' :
+                                                    notif.type === 'like' ? ' liked your note: ' :
+                                                        notif.type === 'save' ? ' saved your note: ' : ' interacted with your note: '}
+                                                <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
                                             </p>
                                         </div>
                                         {isUnread && (
@@ -293,54 +298,60 @@ export default function NotificationBell({ userId }: { userId: string }) {
             )}
 
             {/* Float Toasts for new notifications */}
-            <div style={{
-                position: "fixed",
-                bottom: "24px",
-                right: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                zIndex: 9999,
-                pointerEvents: "none", // Let clicks pass through empty space
-            }}>
-                {toasts.map(toast => {
-                    const actor = toast.actor;
-                    return (
-                        <div
-                            key={toast.id}
-                            onClick={() => handleNotificationClick(toast)}
-                            className="animate-slide-down"
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                padding: "16px",
-                                background: "var(--surface)",
-                                borderRadius: "12px",
-                                border: "1px solid var(--border)",
-                                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
-                                cursor: "pointer",
-                                width: "320px",
-                                pointerEvents: "auto", // Re-enable clicks
-                            }}
-                        >
-                            {actor?.avatar_url ? (
-                                <img src={actor.avatar_url} alt="" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
-                            ) : (
-                                <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", fontWeight: 700, color: "white" }}>
-                                    {actor?.username?.charAt(0).toUpperCase() || "?"}
+            {typeof window !== 'undefined' && createPortal(
+                <div style={{
+                    position: "fixed",
+                    bottom: "24px",
+                    right: "24px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    zIndex: 9999,
+                    pointerEvents: "none", // Let clicks pass through empty space
+                }}>
+                    {toasts.map(toast => {
+                        const actor = toast.actor;
+                        const toastTitle = toast.type === 'like' ? 'New Like' : toast.type === 'save' ? 'New Save' : 'New Mention';
+                        const toastAction = toast.type === 'like' ? 'liked' : toast.type === 'save' ? 'saved' : 'mentioned you in';
+
+                        return (
+                            <div
+                                key={toast.id}
+                                onClick={() => handleNotificationClick(toast)}
+                                className="animate-fade-in-up"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "12px",
+                                    padding: "16px",
+                                    background: "var(--surface)",
+                                    borderRadius: "12px",
+                                    border: "1px solid var(--border)",
+                                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+                                    cursor: "pointer",
+                                    width: "320px",
+                                    pointerEvents: "auto", // Re-enable clicks
+                                }}
+                            >
+                                {actor?.avatar_url ? (
+                                    <img src={actor.avatar_url} alt="" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
+                                ) : (
+                                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", fontWeight: 700, color: "white" }}>
+                                        {actor?.username?.charAt(0).toUpperCase() || "?"}
+                                    </div>
+                                )}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ margin: "0", fontSize: "0.9rem", color: "var(--foreground)", fontWeight: 700 }}>{toastTitle}</p>
+                                    <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: "var(--foreground-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{actor?.username}</span> {toastAction} <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{toast.note?.title}&quot;</span>
+                                    </p>
                                 </div>
-                            )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ margin: "0", fontSize: "0.9rem", color: "var(--foreground)", fontWeight: 700 }}>New Mention</p>
-                                <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: "var(--foreground-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{actor?.username}</span> mentioned you in <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{toast.note?.title}&quot;</span>
-                                </p>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

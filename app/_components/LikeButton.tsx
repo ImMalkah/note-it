@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
+import { toggleInteraction } from "@/app/_lib/manage-interaction";
 import { useRouter } from "next/navigation";
 import UserListModal from "./UserListModal";
 
@@ -21,7 +22,32 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
     useEffect(() => {
         setIsLiked(initialIsLiked);
         setLikesCount(initialLikesCount);
-    }, [initialIsLiked, initialLikesCount]);
+
+        const channel = supabase
+            .channel(`note_likes_${noteId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'note_likes',
+                    filter: `note_id=eq.${noteId}`
+                },
+                (payload) => {
+                    // Update the count based on insert/delete
+                    if (payload.eventType === 'INSERT') {
+                        setLikesCount(prev => prev + 1);
+                    } else if (payload.eventType === 'DELETE') {
+                        setLikesCount(prev => Math.max(0, prev - 1));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [initialIsLiked, initialLikesCount, noteId, supabase]);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -39,33 +65,22 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
         const userId = session.user.id;
 
         try {
+            // Optimistic UI update
+            setIsLiked(!isLiked);
+            setLikesCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1);
+
             if (isLiked) {
                 // Unlike
-                const { error } = await supabase
-                    .from("note_likes")
-                    .delete()
-                    .match({ user_id: userId, note_id: noteId });
-
-                if (error) throw error;
-
-                setIsLiked(false);
-                setLikesCount(prev => Math.max(0, prev - 1));
+                await toggleInteraction("like", noteId, false);
             } else {
                 // Like
-                const { error } = await supabase
-                    .from("note_likes")
-                    .insert({ user_id: userId, note_id: noteId });
-
-                if (error) throw error;
-
-                setIsLiked(true);
-                setLikesCount(prev => prev + 1);
+                await toggleInteraction("like", noteId, true);
             }
-            // Optional: trigger a router.refresh() if you want the server components to update
-            // router.refresh();
         } catch (error) {
             console.error("Error toggling like:", error);
             // Revert optimistic update
+            setIsLiked(isLiked);
+            setLikesCount(likesCount);
         } finally {
             setLoading(false);
         }

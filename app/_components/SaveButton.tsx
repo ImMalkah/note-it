@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
+import { toggleInteraction } from "@/app/_lib/manage-interaction";
 import { useRouter } from "next/navigation";
 
 interface SaveButtonProps {
@@ -17,7 +18,28 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
 
     useEffect(() => {
         setIsSaved(initialIsSaved);
-    }, [initialIsSaved]);
+
+        const channel = supabase
+            .channel(`saved_notes_${noteId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'saved_notes',
+                    filter: `note_id=eq.${noteId}`
+                },
+                async () => {
+                    // We don't necessarily update the boolean `isSaved` blindly here, because the local user's boolean status is specific to them.
+                    // The optimistic UI handles their fast response.
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [initialIsSaved, noteId, supabase]);
 
     const handleSave = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -35,28 +57,20 @@ export default function SaveButton({ noteId, initialIsSaved }: SaveButtonProps) 
         const userId = session.user.id;
 
         try {
+            // Optimistic update
+            setIsSaved(!isSaved);
+
             if (isSaved) {
                 // Unsave
-                const { error } = await supabase
-                    .from("saved_notes")
-                    .delete()
-                    .match({ user_id: userId, note_id: noteId });
-
-                if (error) throw error;
-
-                setIsSaved(false);
+                await toggleInteraction("save", noteId, false);
             } else {
                 // Save
-                const { error } = await supabase
-                    .from("saved_notes")
-                    .insert({ user_id: userId, note_id: noteId });
-
-                if (error) throw error;
-
-                setIsSaved(true);
+                await toggleInteraction("save", noteId, true);
             }
         } catch (error) {
             console.error("Error toggling save:", error);
+            // Revert optimistic update
+            setIsSaved(isSaved);
         } finally {
             setLoading(false);
         }

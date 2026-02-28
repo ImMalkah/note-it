@@ -281,8 +281,11 @@ export default function NotificationBell({ userId }: { userId: string }) {
                                                 <span style={{ color: "var(--foreground)" }}>{actor?.username}</span>
                                                 {notif.type === 'mention' ? ' mentioned you in a note: ' :
                                                     notif.type === 'like' ? ' liked your note: ' :
-                                                        notif.type === 'save' ? ' saved your note: ' : ' interacted with your note: '}
-                                                <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
+                                                        notif.type === 'save' ? ' saved your note: ' :
+                                                            notif.type === 'follow' ? ' followed you' : ' interacted with you'}
+                                                {notif.type !== 'follow' && notif.note && (
+                                                    <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
+                                                )}
                                             </p>
                                         </div>
                                         {isUnread && (
@@ -316,8 +319,8 @@ export default function NotificationBell({ userId }: { userId: string }) {
                 }}>
                     {toasts.map(toast => {
                         const actor = toast.actor;
-                        const toastTitle = toast.type === 'like' ? 'New Like' : toast.type === 'save' ? 'New Save' : 'New Mention';
-                        const toastAction = toast.type === 'like' ? 'liked' : toast.type === 'save' ? 'saved' : 'mentioned you in';
+                        const toastTitle = toast.type === 'like' ? 'New Like' : toast.type === 'save' ? 'New Save' : toast.type === 'follow' ? 'New Follower' : 'New Mention';
+                        const toastAction = toast.type === 'like' ? 'liked' : toast.type === 'save' ? 'saved' : toast.type === 'follow' ? 'followed you' : 'mentioned you in';
 
                         return (
                             <div
@@ -348,7 +351,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <p style={{ margin: "0", fontSize: "0.9rem", color: "var(--foreground)", fontWeight: 700 }}>{toastTitle}</p>
                                     <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: "var(--foreground-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                        <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{actor?.username}</span> {toastAction} <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{toast.note?.title}&quot;</span>
+                                        <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{actor?.username}</span> {toastAction}
+                                        {toast.type !== 'follow' && toast.note && (
+                                            <span style={{ fontStyle: "italic", opacity: 0.9 }}> &quot;{toast.note?.title}&quot;</span>
+                                        )}
                                     </p>
                                 </div>
                             </div>

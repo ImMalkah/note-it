@@ -36,12 +36,9 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
                     event: 'interaction_update',
                 },
                 (payload) => {
-                    const eventType = payload.payload.eventType;
-                    // Update the count based on insert/delete
-                    if (eventType === 'INSERT') {
-                        setLikesCount(prev => prev + 1);
-                    } else if (eventType === 'DELETE') {
-                        setLikesCount(prev => Math.max(0, prev - 1));
+                    const { newCount } = payload.payload;
+                    if (typeof newCount === 'number') {
+                        setLikesCount(newCount);
                     }
                 }
             )

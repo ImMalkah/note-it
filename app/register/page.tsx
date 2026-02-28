@@ -52,7 +52,7 @@ export default function RegisterPage() {
         }
 
         // Sign up
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -68,8 +68,13 @@ export default function RegisterPage() {
             return;
         }
 
-        setSuccess(true);
-        setLoading(false);
+        if (data.session) {
+            router.push("/");
+            router.refresh();
+        } else {
+            setSuccess(true);
+            setLoading(false);
+        }
     };
 
     return (

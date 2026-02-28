@@ -10,11 +10,15 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showResend, setShowResend] = useState(false);
+    const [message, setMessage] = useState("");
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setMessage("");
+        setShowResend(false);
         setLoading(true);
 
         const supabase = createClient();
@@ -25,12 +29,34 @@ export default function LoginPage() {
 
         if (error) {
             setError(error.message);
+            if (error.message.toLowerCase().includes("email not confirmed")) {
+                setShowResend(true);
+            }
             setLoading(false);
             return;
         }
 
         router.push("/");
         router.refresh();
+    };
+
+    const handleResend = async () => {
+        setError("");
+        setMessage("");
+        setLoading(true);
+        const supabase = createClient();
+        const { error } = await supabase.auth.resend({
+            type: "signup",
+            email,
+        });
+
+        if (error) {
+            setError(error.message);
+        } else {
+            setMessage("Confirmation email resent. Please check your inbox.");
+            setShowResend(false);
+        }
+        setLoading(false);
     };
 
     return (
@@ -177,6 +203,45 @@ export default function LoginPage() {
                         >
                             {error}
                         </div>
+                    )}
+
+                    {message && (
+                        <div
+                            style={{
+                                padding: "12px 16px",
+                                borderRadius: "10px",
+                                background: "rgba(16, 185, 129, 0.1)",
+                                border: "1px solid rgba(16, 185, 129, 0.2)",
+                                color: "#10b981",
+                                fontSize: "0.85rem",
+                                marginBottom: "20px",
+                            }}
+                        >
+                            {message}
+                        </div>
+                    )}
+
+                    {showResend && (
+                        <button
+                            type="button"
+                            onClick={handleResend}
+                            disabled={loading}
+                            style={{
+                                width: "100%",
+                                padding: "12px",
+                                borderRadius: "12px",
+                                background: "transparent",
+                                border: "1px solid var(--border-subtle)",
+                                color: "var(--foreground)",
+                                fontSize: "0.9rem",
+                                fontWeight: 500,
+                                cursor: loading ? "not-allowed" : "pointer",
+                                transition: "all 0.2s ease",
+                                marginBottom: "20px",
+                            }}
+                        >
+                            Resend confirmation email
+                        </button>
                     )}
 
                     <button

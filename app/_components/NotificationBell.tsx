@@ -60,56 +60,34 @@ export default function NotificationBell({ userId }: { userId: string }) {
         if (data) setNotifications(data as unknown as Notification[]);
     };
 
-    const fetchSingleNotification = async (id: number) => {
-        const { data } = await supabase
-            .from("notifications")
-            .select(`
-                id, 
-                is_read, 
-                created_at, 
-                type,
-                actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), 
-                note:notes(id, title)
-            `)
-            .eq("id", id)
-            .single();
-
-        return data as Notification | null;
-    };
-
     useEffect(() => {
         if (!userId) return;
 
-        const loadContent = async () => {
-            await fetchNotifications();
-        };
-        loadContent();
+        // Fetch initial data on mount
+        fetchNotifications();
 
+        // Subscribe to Broadcast events on the user's personal channel.
+        // The notify-user Edge Function (triggered via pg_net) sends
+        // the enriched notification here whenever a new row is inserted.
         const channel = supabase
-            .channel(`public:notifications:user_id=eq.${userId}`)
+            .channel(`notifications:${userId}`)
             .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${userId}`
-                },
-                async (payload) => {
-                    // Re-fetch everything to ensure sync
-                    await fetchNotifications();
+                'broadcast',
+                { event: 'new_notification' },
+                (event) => {
+                    const newNotif = event.payload as Notification;
+                    if (!newNotif) return;
 
-                    // If it's a new insertion, show a toast popup
-                    if (payload.eventType === 'INSERT') {
-                        const newNotif = await fetchSingleNotification(payload.new.id);
-                        if (newNotif) {
-                            setToasts(prev => [...prev, newNotif]);
-                            // Auto remove toast after 6 seconds
-                            setTimeout(() => {
-                                setToasts(prev => prev.filter(t => t.id !== newNotif.id));
-                            }, 6000);
-                        }
-                    }
+                    // Add new notification to the top of the list
+                    setNotifications(prev => [newNotif, ...prev].slice(0, 5));
+                    // Increment unread badge
+                    setUnreadCount(prev => prev + 1);
+                    // Show toast popup
+                    setToasts(prev => [...prev, newNotif]);
+                    // Auto-remove toast after 6 seconds
+                    setTimeout(() => {
+                        setToasts(prev => prev.filter(t => t.id !== newNotif.id));
+                    }, 6000);
                 }
             )
             .subscribe();

@@ -17,7 +17,7 @@ export default async function Home() {
       title, 
       content, 
       created_at, 
-      profiles!notes_author_id_fkey(username),
+      profiles!notes_author_id_fkey(username, avatar_url),
       note_likes(count)
     `)
     .order("created_at", { ascending: false });
@@ -44,12 +44,13 @@ export default async function Home() {
   }
 
   const formattedNotes = (notes || []).map((note) => {
-    const profile = note.profiles as unknown as { username: string } | null;
+    const profile = note.profiles as unknown as { username: string, avatar_url: string | null } | null;
     return {
       id: note.id as number,
       title: note.title as string,
       content: note.content as string,
       author: profile?.username || "unknown",
+      authorAvatarUrl: profile?.avatar_url || null,
       date: new Date(note.created_at as string).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -229,6 +230,7 @@ export default async function Home() {
                 initialLikesCount={note.likesCount}
                 initialIsLiked={note.isLiked}
                 initialIsSaved={note.isSaved}
+                authorAvatarUrl={note.authorAvatarUrl}
               />
             ))}
           </div>

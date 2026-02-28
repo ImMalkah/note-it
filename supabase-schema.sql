@@ -8,6 +8,8 @@
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
+  bio TEXT,
+  avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -80,3 +82,33 @@ CREATE TRIGGER on_auth_user_created
 CREATE INDEX idx_notes_author_id ON public.notes(author_id);
 CREATE INDEX idx_notes_created_at ON public.notes(created_at DESC);
 CREATE INDEX idx_profiles_username ON public.profiles(username);
+
+-- 8. Storage Buckets and Policies
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Avatar images are publicly accessible."
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'avatars');
+
+CREATE POLICY "Users can upload their own avatar."
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'avatars' AND 
+    auth.role() = 'authenticated'
+  );
+  
+CREATE POLICY "Users can update their own avatar."
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'avatars' AND 
+    auth.role() = 'authenticated'
+  );
+  
+CREATE POLICY "Users can delete their own avatar."
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'avatars' AND 
+    auth.role() = 'authenticated'
+  );

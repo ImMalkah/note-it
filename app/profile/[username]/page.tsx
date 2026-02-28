@@ -5,6 +5,7 @@ import NoteCard from "@/app/_components/NoteCard";
 import FollowButton from "@/app/_components/FollowButton";
 import ProfileTabs from "@/app/_components/ProfileTabs";
 import ProfileFollowCounts from "./ProfileFollowCounts";
+import EditProfileButton from "./EditProfileButton";
 
 interface PageProps {
     params: Promise<{ username: string }>;
@@ -17,7 +18,7 @@ export default async function ProfilePage({ params }: PageProps) {
     // Fetch the profile
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, created_at, saved_notes_visible, liked_notes_visible")
+        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url")
         .eq("username", username)
         .single();
 
@@ -217,24 +218,37 @@ export default async function ProfilePage({ params }: PageProps) {
                         }}
                     >
                         {/* Avatar */}
-                        <div
-                            style={{
-                                width: "64px",
-                                height: "64px",
-                                borderRadius: "50%",
-                                background:
-                                    "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "1.5rem",
-                                fontWeight: 800,
-                                color: "white",
-                                flexShrink: 0,
-                            }}
-                        >
-                            {(profile.username as string).charAt(0).toUpperCase()}
-                        </div>
+                        {profile.avatar_url ? (
+                            <img
+                                src={profile.avatar_url}
+                                alt={profile.username}
+                                style={{
+                                    width: "64px", height: "64px", borderRadius: "50%",
+                                    objectFit: "cover", flexShrink: 0,
+                                    border: "2px solid var(--border-subtle)",
+                                    background: "var(--surface)"
+                                }}
+                            />
+                        ) : (
+                            <div
+                                style={{
+                                    width: "64px",
+                                    height: "64px",
+                                    borderRadius: "50%",
+                                    background:
+                                        "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "1.5rem",
+                                    fontWeight: 800,
+                                    color: "white",
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {(profile.username as string).charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <div>
                             <h1
                                 className="gradient-text"
@@ -261,14 +275,21 @@ export default async function ProfilePage({ params }: PageProps) {
                                 followersCount={followersCount}
                                 followingCount={followingCount}
                             />
+                            {profile.bio && (
+                                <p style={{ fontSize: "0.9rem", color: "var(--foreground)", marginTop: "12px", lineHeight: 1.5, maxWidth: "500px", whiteSpace: "pre-wrap" }}>
+                                    {profile.bio}
+                                </p>
+                            )}
                         </div>
                     </div>
 
-                    {!isOwnProfile && user && (
-                        <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
+                    <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
+                        {isOwnProfile ? (
+                            <EditProfileButton currentBio={profile.bio} currentAvatarUrl={profile.avatar_url} userId={profile.id} />
+                        ) : user && (
                             <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} />
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {/* Tabs Component to toggle between Notes, Saved, Liked */}

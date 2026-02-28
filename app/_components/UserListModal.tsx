@@ -16,6 +16,7 @@ interface UserListModalProps {
 interface UserData {
     id: string;
     username: string;
+    avatar_url?: string | null;
 }
 
 export default function UserListModal({ isOpen, onClose, title, type, targetId }: UserListModalProps) {
@@ -42,7 +43,7 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
                 if (type === "followers") {
                     const { data } = await supabase
                         .from("user_follows")
-                        .select("profiles!user_follows_follower_id_fkey(id, username)")
+                        .select("profiles!user_follows_follower_id_fkey(id, username, avatar_url)")
                         .eq("following_id", targetId);
 
                     if (data) {
@@ -51,7 +52,7 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
                 } else if (type === "following") {
                     const { data } = await supabase
                         .from("user_follows")
-                        .select("profiles!user_follows_following_id_fkey(id, username)")
+                        .select("profiles!user_follows_following_id_fkey(id, username, avatar_url)")
                         .eq("follower_id", targetId);
 
                     if (data) {
@@ -60,7 +61,7 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
                 } else if (type === "likes") {
                     const { data } = await supabase
                         .from("note_likes")
-                        .select("profiles(id, username)")
+                        .select("profiles(id, username, avatar_url)")
                         .eq("note_id", targetId);
 
                     if (data) {
@@ -156,14 +157,18 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
                                     display: "flex", alignItems: "center", justifyContent: "space-between"
                                 }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                        <div style={{
-                                            width: "40px", height: "40px", borderRadius: "50%",
-                                            background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                            color: "white", fontWeight: 700, fontSize: "1rem"
-                                        }}>
-                                            {u.username.charAt(0).toUpperCase()}
-                                        </div>
+                                        {u.avatar_url ? (
+                                            <img src={u.avatar_url} alt={u.username} style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid var(--border-subtle)" }} />
+                                        ) : (
+                                            <div style={{
+                                                width: "40px", height: "40px", borderRadius: "50%",
+                                                background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                color: "white", fontWeight: 700, fontSize: "1rem"
+                                            }}>
+                                                {u.username.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
                                         <Link href={`/profile/${u.username}`} onClick={onClose} style={{
                                             color: "var(--foreground)", textDecoration: "none", fontWeight: 600
                                         }}>

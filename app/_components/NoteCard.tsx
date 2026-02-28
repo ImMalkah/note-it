@@ -15,6 +15,7 @@ interface NoteCardProps {
     initialLikesCount?: number;
     initialIsLiked?: boolean;
     initialIsSaved?: boolean;
+    authorAvatarUrl?: string | null;
 }
 export default function NoteCard({
     id,
@@ -26,6 +27,7 @@ export default function NoteCard({
     initialLikesCount = 0,
     initialIsLiked = false,
     initialIsSaved = false,
+    authorAvatarUrl,
 }: NoteCardProps) {
     // Function to parse content and turn @username into links
     const renderContentWithMentions = (text: string) => {
@@ -133,6 +135,13 @@ export default function NoteCard({
                         marginBottom: "4px",
                     }}
                 >
+                    {authorAvatarUrl ? (
+                        <img src={authorAvatarUrl} alt={author} style={{ width: "20px", height: "20px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-subtle)" }} />
+                    ) : (
+                        <div style={{ width: "20px", height: "20px", borderRadius: "50%", background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 700, color: "white", flexShrink: 0 }}>
+                            {author.charAt(0).toUpperCase()}
+                        </div>
+                    )}
                     <span
                         style={{
                             fontSize: "0.8rem",

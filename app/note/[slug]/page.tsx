@@ -19,7 +19,7 @@ export default async function NotePage({ params }: PageProps) {
 
     const { data: note, error } = await supabase
         .from("notes")
-        .select("id, title, content, created_at, author_id, profiles!notes_author_id_fkey(username)")
+        .select("id, title, content, created_at, author_id, profiles!notes_author_id_fkey(username, avatar_url)")
         .eq("id", noteId)
         .single();
 
@@ -31,8 +31,9 @@ export default async function NotePage({ params }: PageProps) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    const profile = note.profiles as unknown as { username: string } | null;
+    const profile = note.profiles as unknown as { username: string, avatar_url: string | null } | null;
     const authorName = profile?.username || "unknown";
+    const authorAvatarUrl = profile?.avatar_url || null;
     const isAuthor = user?.id === note.author_id;
 
     const formattedDate = new Date(note.created_at as string).toLocaleDateString(
@@ -116,6 +117,13 @@ export default async function NotePage({ params }: PageProps) {
                             marginBottom: "8px",
                         }}
                     >
+                        {authorAvatarUrl ? (
+                            <img src={authorAvatarUrl} alt={authorName} style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-subtle)" }} />
+                        ) : (
+                            <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.7rem", fontWeight: 700, color: "white", flexShrink: 0 }}>
+                                {authorName.charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <span
                             style={{
                                 fontSize: "0.85rem",

@@ -10,6 +10,7 @@ interface Note {
     title: string;
     content: string;
     author: string;
+    authorAvatarUrl?: string | null;
     date: string;
     likesCount: number;
 }
@@ -96,6 +97,7 @@ export default function ProfileTabs({
                         initialLikesCount={note.likesCount}
                         initialIsLiked={userLikes.has(note.id)}
                         initialIsSaved={userSaves.has(note.id)}
+                        authorAvatarUrl={note.authorAvatarUrl}
                     />
                 ))}
             </div>

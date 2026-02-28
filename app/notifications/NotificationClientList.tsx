@@ -130,6 +130,9 @@ export default function NotificationClientList({ userId, initialNotifications }:
                 } else if (notif.type === 'follow') {
                     actionText = "followed";
                     icon = "👤";
+                } else if (notif.type === 'mention') {
+                    actionText = "mentioned you in";
+                    icon = "💬";
                 }
 
                 return (

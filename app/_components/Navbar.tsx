@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import NotificationBell from "./NotificationBell";
+import UserSearchBar from "./UserSearchBar";
 
 interface NavbarProps {
   user: { id: string; username: string; email: string } | null;
@@ -61,6 +62,11 @@ export default function Navbar({ user }: NavbarProps) {
         >
           note it!
         </Link>
+
+        {/* Search Bar - Hidden on very small screens, responsive width otherwise */}
+        <div style={{ flex: 1, maxWidth: "300px", margin: "0 24px" }} className="desktop-search">
+          <UserSearchBar />
+        </div>
 
         {/* Desktop Nav */}
         <div
@@ -179,6 +185,9 @@ export default function Navbar({ user }: NavbarProps) {
             borderTop: "1px solid var(--border-subtle)",
           }}
         >
+          <div style={{ padding: "8px 16px 16px" }}>
+            <UserSearchBar />
+          </div>
           <NavLink
             href="/"
             label="Posts"
@@ -251,7 +260,7 @@ export default function Navbar({ user }: NavbarProps) {
 
       <style jsx>{`
         @media (max-width: 640px) {
-          .desktop-nav {
+          .desktop-nav, .desktop-search {
             display: none !important;
           }
           .mobile-toggle {

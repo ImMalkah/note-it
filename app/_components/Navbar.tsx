@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
+import NotificationBell from "./NotificationBell";
 
 interface NavbarProps {
   user: { id: string; username: string; email: string } | null;
@@ -133,6 +134,7 @@ export default function Navbar({ user }: NavbarProps) {
                 >
                   Logout
                 </button>
+                <NotificationBell userId={user.id} />
                 <NavLink
                   href={`/profile/${user.username}`}
                   label={user.username}
@@ -232,6 +234,9 @@ export default function Navbar({ user }: NavbarProps) {
               >
                 Logout
               </button>
+              <div style={{ padding: "0 16px" }}>
+                <NotificationBell userId={user.id} />
+              </div>
               <NavLink
                 href={`/profile/${user.username}`}
                 label={user.username}

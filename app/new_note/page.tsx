@@ -29,17 +29,52 @@ export default function NewNotePage() {
             return;
         }
 
-        const { error: insertError } = await supabase.from("notes").insert({
+        const { data: noteData, error: insertError } = await supabase.from("notes").insert({
             title: title.trim(),
             content: content.trim(),
             author_id: user.id,
-        });
+        }).select("id").single();
 
         if (insertError) {
             setError(insertError.message);
             setLoading(false);
             return;
         }
+
+        // --- Notifications Logic ---
+        const combinedText = `${title.trim()} ${content.trim()}`;
+        const mentionRegex = /@([a-zA-Z0-9_]+)/g;
+        const mentionedUsernames = new Set<string>();
+        let match;
+
+        while ((match = mentionRegex.exec(combinedText)) !== null) {
+            mentionedUsernames.add(match[1]);
+        }
+
+        if (mentionedUsernames.size > 0) {
+            // Find all corresponding user IDs
+            const { data: profiles } = await supabase
+                .from("profiles")
+                .select("id, username")
+                .in("username", Array.from(mentionedUsernames));
+
+            if (profiles && profiles.length > 0) {
+                const notificationsToInsert = profiles
+                    .filter(p => p.id !== user.id) // Don't notify self
+                    .map(p => ({
+                        user_id: p.id,
+                        actor_id: user.id,
+                        note_id: noteData.id,
+                        type: "mention",
+                        is_read: false
+                    }));
+
+                if (notificationsToInsert.length > 0) {
+                    await supabase.from("notifications").insert(notificationsToInsert);
+                }
+            }
+        }
+        // ---
 
         router.push("/");
         router.refresh();

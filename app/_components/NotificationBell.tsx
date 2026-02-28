@@ -57,7 +57,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
             .order("created_at", { ascending: false })
             .limit(5);
 
-        if (data) setNotifications(data as any);
+        if (data) setNotifications(data as unknown as Notification[]);
     };
 
     const fetchSingleNotification = async (id: number) => {
@@ -80,7 +80,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
     useEffect(() => {
         if (!userId) return;
 
-        fetchNotifications();
+        const loadContent = async () => {
+            await fetchNotifications();
+        };
+        loadContent();
 
         const channel = supabase
             .channel(`public:notifications:user_id=eq.${userId}`)
@@ -94,7 +97,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
                 },
                 async (payload) => {
                     // Re-fetch everything to ensure sync
-                    fetchNotifications();
+                    await fetchNotifications();
 
                     // If it's a new insertion, show a toast popup
                     if (payload.eventType === 'INSERT') {
@@ -114,6 +117,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
         return () => {
             supabase.removeChannel(channel);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
     // Close dropdown on outside click
@@ -272,7 +276,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
                                         )}
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <p style={{ margin: "0 0 4px 0", fontSize: "0.9rem", color: "var(--foreground)", lineHeight: 1.4, fontWeight: isUnread ? 700 : 400 }}>
-                                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span> mentioned you in a note: <span style={{ fontStyle: "italic", opacity: 0.9 }}>"{notif.note?.title}"</span>
+                                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span> mentioned you in a note: <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
                                             </p>
                                         </div>
                                         {isUnread && (
@@ -334,7 +338,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{ margin: "0", fontSize: "0.9rem", color: "var(--foreground)", fontWeight: 700 }}>New Mention</p>
                                 <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: "var(--foreground-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{actor?.username}</span> mentioned you in <span style={{ fontStyle: "italic", opacity: 0.9 }}>"{toast.note?.title}"</span>
+                                    <span style={{ color: "var(--foreground)", fontWeight: 500 }}>{actor?.username}</span> mentioned you in <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{toast.note?.title}&quot;</span>
                                 </p>
                             </div>
                         </div>

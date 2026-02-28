@@ -13,7 +13,7 @@ export default async function NotificationsPage() {
         redirect("/login");
     }
 
-    const { data: notifications, error } = await supabase
+    const { data: notifications } = await supabase
         .from("notifications")
         .select(`
             id, 
@@ -54,7 +54,7 @@ export default async function NotificationsPage() {
                         Notifications
                     </h1>
                     <p style={{ margin: 0, color: "var(--foreground-muted)", fontSize: "0.95rem" }}>
-                        See who's talking about you.
+                        See who&apos;s talking about you.
                     </p>
                 </div>
 
@@ -66,7 +66,7 @@ export default async function NotificationsPage() {
                         overflow: "hidden"
                     }}
                 >
-                    <NotificationClientList initialNotifications={notifications || []} />
+                    <NotificationClientList userId={user.id} initialNotifications={notifications as any || []} />
                 </div>
             </div>
         </div>

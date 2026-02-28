@@ -17,7 +17,7 @@ export default async function Home() {
       title, 
       content, 
       created_at, 
-      profiles(username),
+      profiles!notes_author_id_fkey(username),
       note_likes(count)
     `)
     .order("created_at", { ascending: false });

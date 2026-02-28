@@ -19,7 +19,7 @@ export default async function NotePage({ params }: PageProps) {
 
     const { data: note, error } = await supabase
         .from("notes")
-        .select("id, title, content, created_at, author_id, profiles(username)")
+        .select("id, title, content, created_at, author_id, profiles!notes_author_id_fkey(username)")
         .eq("id", noteId)
         .single();
 

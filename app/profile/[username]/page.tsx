@@ -77,7 +77,7 @@ export default async function ProfilePage({ params }: PageProps) {
             .from("saved_notes")
             .select(`
                 note_id,
-                notes (id, title, content, created_at, profiles(username), note_likes(count))
+                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count))
             `)
             .eq("user_id", profile.id)
             .order("created_at", { ascending: false });
@@ -107,7 +107,7 @@ export default async function ProfilePage({ params }: PageProps) {
             .from("note_likes")
             .select(`
                 note_id,
-                notes (id, title, content, created_at, profiles(username), note_likes(count))
+                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count))
             `)
             .eq("user_id", profile.id)
             .order("created_at", { ascending: false });

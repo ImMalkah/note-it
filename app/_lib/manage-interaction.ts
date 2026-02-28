@@ -14,7 +14,8 @@ export async function toggleInteraction(action: "like" | "save" | "follow", targ
     });
 
     if (error) {
-        throw new Error(`Failed to toggle ${action}: ${error.message}`);
+        console.error("Invoke Error Payload:", error);
+        throw new Error(`Failed to toggle ${action}: ${error.message || JSON.stringify(error)}`);
     }
 
     return data;

@@ -12,6 +12,7 @@ export default function RegisterPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
     const router = useRouter();
 
     const handleRegister = async (e: React.FormEvent) => {
@@ -67,8 +68,8 @@ export default function RegisterPage() {
             return;
         }
 
-        router.push("/");
-        router.refresh();
+        setSuccess(true);
+        setLoading(false);
     };
 
     return (
@@ -114,218 +115,244 @@ export default function RegisterPage() {
                     Join note it! and start sharing
                 </p>
 
-                <form onSubmit={handleRegister}>
-                    <div style={{ marginBottom: "20px" }}>
-                        <label
-                            htmlFor="username"
-                            style={{
-                                display: "block",
-                                fontSize: "0.8rem",
-                                fontWeight: 500,
-                                color: "var(--foreground-muted)",
-                                marginBottom: "8px",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                            }}
-                        >
-                            Username
-                        </label>
-                        <input
-                            id="username"
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                            placeholder="malkah"
-                            style={{
-                                width: "100%",
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--border-subtle)",
-                                background: "var(--background)",
-                                color: "var(--foreground)",
-                                fontSize: "0.9rem",
-                                outline: "none",
-                                transition: "border-color 0.2s ease",
-                                boxSizing: "border-box",
-                            }}
-                            onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--primary)")
-                            }
-                            onBlur={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                            }
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: "20px" }}>
-                        <label
-                            htmlFor="email"
-                            style={{
-                                display: "block",
-                                fontSize: "0.8rem",
-                                fontWeight: 500,
-                                color: "var(--foreground-muted)",
-                                marginBottom: "8px",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                            }}
-                        >
-                            Email
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder="your@email.com"
-                            style={{
-                                width: "100%",
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--border-subtle)",
-                                background: "var(--background)",
-                                color: "var(--foreground)",
-                                fontSize: "0.9rem",
-                                outline: "none",
-                                transition: "border-color 0.2s ease",
-                                boxSizing: "border-box",
-                            }}
-                            onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--primary)")
-                            }
-                            onBlur={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                            }
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: "20px" }}>
-                        <label
-                            htmlFor="password"
-                            style={{
-                                display: "block",
-                                fontSize: "0.8rem",
-                                fontWeight: 500,
-                                color: "var(--foreground-muted)",
-                                marginBottom: "8px",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                            }}
-                        >
-                            Password
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            minLength={6}
-                            placeholder="••••••••"
-                            style={{
-                                width: "100%",
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--border-subtle)",
-                                background: "var(--background)",
-                                color: "var(--foreground)",
-                                fontSize: "0.9rem",
-                                outline: "none",
-                                transition: "border-color 0.2s ease",
-                                boxSizing: "border-box",
-                            }}
-                            onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--primary)")
-                            }
-                            onBlur={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                            }
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: "28px" }}>
-                        <label
-                            htmlFor="confirmPassword"
-                            style={{
-                                display: "block",
-                                fontSize: "0.8rem",
-                                fontWeight: 500,
-                                color: "var(--foreground-muted)",
-                                marginBottom: "8px",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                            }}
-                        >
-                            Confirm Password
-                        </label>
-                        <input
-                            id="confirmPassword"
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                            style={{
-                                width: "100%",
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--border-subtle)",
-                                background: "var(--background)",
-                                color: "var(--foreground)",
-                                fontSize: "0.9rem",
-                                outline: "none",
-                                transition: "border-color 0.2s ease",
-                                boxSizing: "border-box",
-                            }}
-                            onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--primary)")
-                            }
-                            onBlur={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                            }
-                        />
-                    </div>
-
-                    {error && (
+                {success ? (
+                    <div style={{ textAlign: "center", marginBottom: "32px" }}>
                         <div
                             style={{
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                background: "rgba(239, 68, 68, 0.1)",
-                                border: "1px solid rgba(239, 68, 68, 0.2)",
-                                color: "#ef4444",
-                                fontSize: "0.85rem",
-                                marginBottom: "20px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "64px",
+                                height: "64px",
+                                borderRadius: "50%",
+                                background: "rgba(16, 185, 129, 0.1)",
+                                color: "#10b981",
+                                marginBottom: "16px",
                             }}
                         >
-                            {error}
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
                         </div>
-                    )}
+                        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "8px" }}>Check your email</h2>
+                        <p style={{ color: "var(--foreground-muted)", fontSize: "0.95rem", lineHeight: 1.5 }}>
+                            We sent a confirmation link to <strong style={{ color: "var(--foreground)" }}>{email}</strong>. Please click the link to confirm your account and log in.
+                        </p>
+                    </div>
+                ) : (
+                    <form onSubmit={handleRegister}>
+                        <div style={{ marginBottom: "20px" }}>
+                            <label
+                                htmlFor="username"
+                                style={{
+                                    display: "block",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 500,
+                                    color: "var(--foreground-muted)",
+                                    marginBottom: "8px",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                }}
+                            >
+                                Username
+                            </label>
+                            <input
+                                id="username"
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                placeholder="malkah"
+                                style={{
+                                    width: "100%",
+                                    padding: "12px 16px",
+                                    borderRadius: "10px",
+                                    border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)",
+                                    color: "var(--foreground)",
+                                    fontSize: "0.9rem",
+                                    outline: "none",
+                                    transition: "border-color 0.2s ease",
+                                    boxSizing: "border-box",
+                                }}
+                                onFocus={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--primary)")
+                                }
+                                onBlur={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
+                                }
+                            />
+                        </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            width: "100%",
-                            padding: "14px",
-                            borderRadius: "12px",
-                            background: loading
-                                ? "var(--surface-hover)"
-                                : "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                            color: "white",
-                            fontSize: "0.9rem",
-                            fontWeight: 600,
-                            border: "none",
-                            cursor: loading ? "not-allowed" : "pointer",
-                            transition: "all 0.3s ease",
-                            boxShadow: loading ? "none" : "0 4px 15px var(--primary-soft)",
-                        }}
-                    >
-                        {loading ? "Creating account..." : "Create account"}
-                    </button>
-                </form>
+                        <div style={{ marginBottom: "20px" }}>
+                            <label
+                                htmlFor="email"
+                                style={{
+                                    display: "block",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 500,
+                                    color: "var(--foreground-muted)",
+                                    marginBottom: "8px",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                }}
+                            >
+                                Email
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="your@email.com"
+                                style={{
+                                    width: "100%",
+                                    padding: "12px 16px",
+                                    borderRadius: "10px",
+                                    border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)",
+                                    color: "var(--foreground)",
+                                    fontSize: "0.9rem",
+                                    outline: "none",
+                                    transition: "border-color 0.2s ease",
+                                    boxSizing: "border-box",
+                                }}
+                                onFocus={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--primary)")
+                                }
+                                onBlur={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
+                                }
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: "20px" }}>
+                            <label
+                                htmlFor="password"
+                                style={{
+                                    display: "block",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 500,
+                                    color: "var(--foreground-muted)",
+                                    marginBottom: "8px",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                }}
+                            >
+                                Password
+                            </label>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength={6}
+                                placeholder="••••••••"
+                                style={{
+                                    width: "100%",
+                                    padding: "12px 16px",
+                                    borderRadius: "10px",
+                                    border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)",
+                                    color: "var(--foreground)",
+                                    fontSize: "0.9rem",
+                                    outline: "none",
+                                    transition: "border-color 0.2s ease",
+                                    boxSizing: "border-box",
+                                }}
+                                onFocus={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--primary)")
+                                }
+                                onBlur={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
+                                }
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: "28px" }}>
+                            <label
+                                htmlFor="confirmPassword"
+                                style={{
+                                    display: "block",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 500,
+                                    color: "var(--foreground-muted)",
+                                    marginBottom: "8px",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                }}
+                            >
+                                Confirm Password
+                            </label>
+                            <input
+                                id="confirmPassword"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                                style={{
+                                    width: "100%",
+                                    padding: "12px 16px",
+                                    borderRadius: "10px",
+                                    border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)",
+                                    color: "var(--foreground)",
+                                    fontSize: "0.9rem",
+                                    outline: "none",
+                                    transition: "border-color 0.2s ease",
+                                    boxSizing: "border-box",
+                                }}
+                                onFocus={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--primary)")
+                                }
+                                onBlur={(e) =>
+                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
+                                }
+                            />
+                        </div>
+
+                        {error && (
+                            <div
+                                style={{
+                                    padding: "12px 16px",
+                                    borderRadius: "10px",
+                                    background: "rgba(239, 68, 68, 0.1)",
+                                    border: "1px solid rgba(239, 68, 68, 0.2)",
+                                    color: "#ef4444",
+                                    fontSize: "0.85rem",
+                                    marginBottom: "20px",
+                                }}
+                            >
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                width: "100%",
+                                padding: "14px",
+                                borderRadius: "12px",
+                                background: loading
+                                    ? "var(--surface-hover)"
+                                    : "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
+                                color: "white",
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                border: "none",
+                                cursor: loading ? "not-allowed" : "pointer",
+                                transition: "all 0.3s ease",
+                                boxShadow: loading ? "none" : "0 4px 15px var(--primary-soft)",
+                            }}
+                        >
+                            {loading ? "Creating account..." : "Create account"}
+                        </button>
+                    </form>
+                )}
 
                 <p
                     style={{

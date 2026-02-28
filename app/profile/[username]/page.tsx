@@ -3,7 +3,7 @@ import { createClient } from "@/app/_lib/supabase/server";
 import { notFound } from "next/navigation";
 import NoteCard from "@/app/_components/NoteCard";
 import FollowButton from "@/app/_components/FollowButton";
-import ProfileTabs from "./ProfileTabs";
+import ProfileTabs from "@/app/_components/ProfileTabs";
 
 interface PageProps {
     params: Promise<{ username: string }>;

@@ -35,15 +35,9 @@ export default function SaveButton({ noteId, initialIsSaved, initialSavesCount }
                     event: 'interaction_update',
                 },
                 (payload: any) => {
-                    const eventType = payload.payload.eventType;
-                    const newCount = payload.payload.newCount;
-
-                    if (eventType === 'INSERT') {
-                        setIsSaved(true);
-                        if (newCount !== undefined) setSavesCount(newCount);
-                    } else if (eventType === 'DELETE') {
-                        setIsSaved(false);
-                        if (newCount !== undefined) setSavesCount(newCount);
+                    const { newCount } = payload.payload;
+                    if (typeof newCount === 'number') {
+                        setSavesCount(newCount);
                     }
                 }
             )

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/_lib/supabase/client";
+import MentionsTextarea from "@/app/_components/MentionsTextarea";
 
 export default function NewNotePage() {
     const [title, setTitle] = useState("");
@@ -174,10 +175,10 @@ export default function NewNotePage() {
                         >
                             Content
                         </label>
-                        <textarea
+                        <MentionsTextarea
                             id="content"
                             value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            onChange={(val) => setContent(val)}
                             required
                             rows={6}
                             placeholder="Write your note here..."
@@ -197,12 +198,6 @@ export default function NewNotePage() {
                                 lineHeight: 1.6,
                                 boxSizing: "border-box",
                             }}
-                            onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--primary)")
-                            }
-                            onBlur={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                            }
                         />
                     </div>
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
+import MentionsTextarea from "./MentionsTextarea";
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -114,9 +115,9 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                     {/* Bio Edit */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--foreground)" }}>Bio</label>
-                        <textarea
+                        <MentionsTextarea
                             value={bio}
-                            onChange={(e) => setBio(e.target.value)}
+                            onChange={(val) => setBio(val)}
                             placeholder="Tell us about yourself..."
                             rows={4}
                             style={{

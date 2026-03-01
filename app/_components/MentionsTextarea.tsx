@@ -16,9 +16,10 @@ interface MentionsTextareaProps {
     rows?: number;
     id?: string;
     required?: boolean;
+    maxLength?: number;
 }
 
-export default function MentionsTextarea({ value, onChange, placeholder, style, rows = 6, id, required }: MentionsTextareaProps) {
+export default function MentionsTextarea({ value, onChange, placeholder, style, rows = 6, id, required, maxLength }: MentionsTextareaProps) {
     const [mentionQuery, setMentionQuery] = useState<string | null>(null);
     const [mentionStartIndex, setMentionStartIndex] = useState<number>(-1);
     const [users, setUsers] = useState<UserInfo[]>([]);
@@ -142,6 +143,7 @@ export default function MentionsTextarea({ value, onChange, placeholder, style, 
             <textarea
                 id={id}
                 required={required}
+                maxLength={maxLength}
                 ref={textareaRef}
                 value={value}
                 onChange={handleChange}

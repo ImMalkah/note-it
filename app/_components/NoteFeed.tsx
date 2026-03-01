@@ -10,6 +10,7 @@ export interface FormattedNote {
     title: string;
     content: string;
     author: string;
+    authorId: string;
     authorAvatarUrl: string | null;
     date: string;
     likesCount: number;
@@ -40,7 +41,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
                     const { data: note } = await supabase
                         .from("notes")
                         .select(
-                            `id, title, content, created_at,
+                            `id, title, content, created_at, author_id,
                profiles!notes_author_id_fkey(username, avatar_url),
                note_likes(count)`
                         )
@@ -80,6 +81,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
                         title: note.title,
                         content: note.content,
                         author: profile?.username || "unknown",
+                        authorId: note.author_id,
                         authorAvatarUrl: profile?.avatar_url || null,
                         date: new Date(note.created_at).toLocaleDateString("en-US", {
                             year: "numeric",
@@ -159,6 +161,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
             style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+                alignItems: "start",
                 gap: "20px",
             }}
         >
@@ -176,6 +179,8 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
                     initialIsLiked={note.isLiked}
                     initialIsSaved={note.isSaved}
                     authorAvatarUrl={note.authorAvatarUrl}
+                    isAuthor={userId === note.authorId}
+                    onDeleteAction={(deletedId) => setNotes((prev) => prev.filter((n) => n.id !== deletedId))}
                 />
             ))}
         </div>

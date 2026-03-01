@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter } from "next/navigation";
+import { createClient } from "@/app/_lib/supabase/client";
 import LikeButton from "./LikeButton";
 import SaveButton from "./SaveButton";
 import { getMoodById } from "@/app/_utils/moods";
@@ -18,6 +20,8 @@ interface NoteCardProps {
     initialIsSaved?: boolean;
     initialSavesCount?: number;
     authorAvatarUrl?: string | null;
+    isAuthor?: boolean;
+    onDeleteAction?: (id: number) => void;
 }
 export default function NoteCard({
     id,
@@ -31,7 +35,12 @@ export default function NoteCard({
     initialIsSaved = false,
     initialSavesCount = 0,
     authorAvatarUrl,
+    isAuthor = false,
+    onDeleteAction,
 }: NoteCardProps) {
+    const router = useRouter();
+    const [isDeleting, setIsDeleting] = useState(false);
+
     // Function to parse content and turn @username into links
     const renderContentWithMentions = (text: string) => {
         const parts = text.split(/(@[a-zA-Z0-9_]+)/g);
@@ -56,12 +65,16 @@ export default function NoteCard({
     return (
         <div
             className="gradient-border"
+            onClick={() => router.push(`/note/${id}`)}
             style={{
                 background: "var(--surface)",
                 borderRadius: "16px",
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 animationDelay: `${index * 0.05}s`,
-                cursor: "default",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
             }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
@@ -73,96 +86,124 @@ export default function NoteCard({
                 e.currentTarget.style.boxShadow = "none";
             }}
         >
-            <div style={{ padding: "24px" }}>
-                {/* Title Row */}
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        gap: "12px",
-                        marginBottom: "12px",
-                    }}
-                >
-                    {(() => {
-                        const mood = getMoodById(title);
-                        if (mood) {
-                            return (
-                                <div
-                                    style={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                        padding: "4px 12px",
-                                        borderRadius: "20px",
-                                        background: `${mood.color}15`,
-                                        border: `1px solid ${mood.color}30`,
-                                        flex: 1,
-                                    }}
-                                >
-                                    <span style={{ fontSize: "1.2rem" }}>{mood.emoji}</span>
-                                    <span
-                                        style={{
-                                            fontSize: "0.95rem",
-                                            fontWeight: 600,
-                                            color: mood.color,
-                                            letterSpacing: "0.02em",
-                                        }}
-                                    >
-                                        Feeling {mood.label.toLowerCase()}
-                                    </span>
-                                </div>
-                            );
-                        }
-
-                        // Fallback for legacy text titles
-                        return (
-                            <h2
-                                style={{
-                                    fontSize: "1.25rem",
-                                    fontWeight: 700,
-                                    color: "var(--foreground)",
-                                    margin: 0,
-                                    lineHeight: 1.3,
-                                    letterSpacing: "-0.01em",
-                                    flex: 1,
-                                }}
-                            >
-                                {title}
-                            </h2>
-                        );
-                    })()}
-
-                    <Link
-                        href={`/note/${id}`}
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", flex: 1, position: "relative" }}>
+                {/* Trash Can (Absolutely positioned to stay out of document flow) */}
+                {isAuthor && (
+                    <button
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            if (isDeleting) return;
+                            if (window.confirm("Are you sure you want to delete this note?")) {
+                                setIsDeleting(true);
+                                const supabase = createClient();
+                                await supabase.from("notes").delete().eq("id", id);
+                                if (onDeleteAction) onDeleteAction(id);
+                                router.refresh();
+                            }
+                        }}
+                        disabled={isDeleting}
                         style={{
+                            position: "absolute",
+                            top: "24px",
+                            right: "24px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             width: "36px",
                             height: "36px",
                             borderRadius: "10px",
-                            background: "var(--primary-soft)",
-                            color: "var(--primary)",
-                            fontSize: "0.85rem",
+                            background: "rgba(239, 68, 68, 0.1)",
+                            color: "#ef4444",
+                            fontSize: "1rem",
                             transition: "all 0.2s ease",
                             flexShrink: 0,
+                            border: "none",
+                            cursor: isDeleting ? "not-allowed" : "pointer",
+                            opacity: isDeleting ? 0.5 : 1,
+                            zIndex: 10,
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "var(--primary)";
-                            e.currentTarget.style.color = "white";
-                            e.currentTarget.style.transform = "scale(1.05)";
+                            if (!isDeleting) {
+                                e.currentTarget.style.background = "#ef4444";
+                                e.currentTarget.style.color = "white";
+                                e.currentTarget.style.transform = "scale(1.05)";
+                            }
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "var(--primary-soft)";
-                            e.currentTarget.style.color = "var(--primary)";
-                            e.currentTarget.style.transform = "scale(1)";
+                            if (!isDeleting) {
+                                e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+                                e.currentTarget.style.color = "#ef4444";
+                                e.currentTarget.style.transform = "scale(1)";
+                            }
                         }}
-                        aria-label={`Expand note: ${title}`}
+                        aria-label={`Delete note: ${title}`}
                     >
-                        ↗
-                    </Link>
-                </div>
+                        🗑
+                    </button>
+                )}
+
+                {/* Title Row */}
+                {title ? (
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            gap: "12px",
+                            marginBottom: "12px",
+                            paddingRight: isAuthor ? "40px" : "0", // Prevent overlap with absolute trash can
+                        }}
+                    >
+                        {(() => {
+                            const mood = getMoodById(title);
+                            if (mood) {
+                                return (
+                                    <div
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                            padding: "4px 12px",
+                                            borderRadius: "20px",
+                                            background: `${mood.color}15`,
+                                            border: `1px solid ${mood.color}30`,
+                                            flex: 1,
+                                        }}
+                                    >
+                                        <span style={{ fontSize: "1.2rem" }}>{mood.emoji}</span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.95rem",
+                                                fontWeight: 600,
+                                                color: mood.color,
+                                                letterSpacing: "0.02em",
+                                            }}
+                                        >
+                                            Feeling {mood.label.toLowerCase()}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            // Fallback for legacy text titles
+                            return (
+                                <h2
+                                    style={{
+                                        fontSize: "1.25rem",
+                                        fontWeight: 700,
+                                        color: "var(--foreground)",
+                                        margin: 0,
+                                        lineHeight: 1.3,
+                                        letterSpacing: "-0.01em",
+                                        flex: 1,
+                                    }}
+                                >
+                                    {title}
+                                </h2>
+                            );
+                        })()}
+                    </div>
+                ) : null}
 
                 {/* Author */}
                 <div
@@ -171,6 +212,7 @@ export default function NoteCard({
                         alignItems: "center",
                         gap: "6px",
                         marginBottom: "4px",
+                        paddingRight: !title && isAuthor ? "40px" : "0",
                     }}
                 >
                     {authorAvatarUrl ? (
@@ -192,6 +234,7 @@ export default function NoteCard({
                     <Link
                         href={`/profile/${author}`}
                         className="gradient-text"
+                        onClick={(e) => e.stopPropagation()}
                         style={{
                             fontSize: "0.8rem",
                             fontWeight: 600,
@@ -238,6 +281,7 @@ export default function NoteCard({
                         WebkitLineClamp: 4,
                         WebkitBoxOrient: "vertical",
                         overflow: "hidden",
+                        marginBottom: "16px",
                     }}
                 >
                     {renderContentWithMentions(content)}
@@ -249,7 +293,7 @@ export default function NoteCard({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        marginTop: "16px",
+                        marginTop: "auto",
                         paddingTop: "12px",
                         borderTop: "1px solid var(--border-subtle)",
                     }}

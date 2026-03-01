@@ -17,6 +17,7 @@ export default async function Home() {
       title, 
       content, 
       created_at, 
+      author_id,
       profiles!notes_author_id_fkey(username, avatar_url),
       note_likes(count),
       saved_notes(count)
@@ -51,6 +52,7 @@ export default async function Home() {
       title: note.title as string,
       content: note.content as string,
       author: profile?.username || "unknown",
+      authorId: note.author_id as string,
       authorAvatarUrl: profile?.avatar_url || null,
       date: new Date(note.created_at as string).toLocaleDateString("en-US", {
         year: "numeric",

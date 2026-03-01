@@ -249,6 +249,7 @@ export default function NewNotePage() {
                             required
                             rows={6}
                             placeholder="Write your note here..."
+                            maxLength={300}
                             style={{
                                 width: "100%",
                                 padding: "12px 16px",
@@ -266,6 +267,18 @@ export default function NewNotePage() {
                                 boxSizing: "border-box",
                             }}
                         />
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                marginTop: "8px",
+                                fontSize: "0.8rem",
+                                color: content.length >= 300 ? "#ef4444" : "var(--foreground-muted)",
+                                fontWeight: content.length >= 300 ? 600 : 400,
+                            }}
+                        >
+                            {content.length}/300 characters
+                        </div>
                     </div>
 
                     {error && (

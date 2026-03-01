@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import NoteCard from "@/app/_components/NoteCard";
 import FollowButton from "@/app/_components/FollowButton";
 import ProfileTabs from "@/app/_components/ProfileTabs";
+import { getMoodById } from "@/app/_utils/moods";
 import ProfileFollowCounts from "./ProfileFollowCounts";
 import EditProfileButton from "./EditProfileButton";
 
@@ -18,7 +19,7 @@ export default async function ProfilePage({ params }: PageProps) {
     // Fetch the profile
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url")
+        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url, mood")
         .eq("username", username)
         .single();
 
@@ -292,12 +293,39 @@ export default async function ProfilePage({ params }: PageProps) {
                                     {profile.bio}
                                 </p>
                             )}
+
+                            {/* Render User Mood if set */}
+                            {profile.mood && (() => {
+                                const mood = getMoodById(profile.mood);
+                                if (!mood) return null;
+                                return (
+                                    <div style={{ marginTop: "16px", display: "inline-flex" }}>
+                                        <div
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "8px",
+                                                padding: "4px 12px",
+                                                borderRadius: "20px",
+                                                background: `${mood.color}15`,
+                                                border: `1px solid ${mood.color}30`,
+                                                whiteSpace: "nowrap",
+                                            }}
+                                        >
+                                            <span style={{ fontSize: "1.1rem" }}>{mood.emoji}</span>
+                                            <span style={{ fontSize: "0.9rem", fontWeight: 600, color: mood.color }}>
+                                                Feeling {mood.label.toLowerCase()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
                     <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
                         {isOwnProfile ? (
-                            <EditProfileButton currentBio={profile.bio} currentAvatarUrl={profile.avatar_url} userId={profile.id} />
+                            <EditProfileButton currentBio={profile.bio} currentAvatarUrl={profile.avatar_url} userId={profile.id} currentMood={profile.mood} />
                         ) : user && (
                             <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
                         )}

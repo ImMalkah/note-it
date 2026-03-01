@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
 import MentionsTextarea from "./MentionsTextarea";
+import { MOODS } from "@/app/_utils/moods";
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -11,10 +12,12 @@ interface EditProfileModalProps {
     currentBio: string | null;
     currentAvatarUrl: string | null;
     userId: string;
+    currentMood?: string | null;
 }
 
-export default function EditProfileModal({ isOpen, onClose, currentBio, currentAvatarUrl, userId }: EditProfileModalProps) {
+export default function EditProfileModal({ isOpen, onClose, currentBio, currentAvatarUrl, userId, currentMood }: EditProfileModalProps) {
     const [bio, setBio] = useState(currentBio || "");
+    const [mood, setMood] = useState(currentMood || "");
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatarUrl);
     const [loading, setLoading] = useState(false);
@@ -61,7 +64,8 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                 .from("profiles")
                 .update({
                     bio: bio,
-                    avatar_url: newAvatarUrl
+                    avatar_url: newAvatarUrl,
+                    mood: mood || null
                 })
                 .eq("id", userId);
 
@@ -126,6 +130,75 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                                 color: "var(--foreground)", fontSize: "0.95rem", resize: "none"
                             }}
                         />
+                    </div>
+
+                    {/* Mood Edit */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--foreground)" }}>Current Mood</label>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "8px",
+                                maxHeight: "150px",
+                                overflowY: "auto",
+                                padding: "4px 0",
+                            }}
+                        >
+                            {/* Option to clear mood */}
+                            <button
+                                type="button"
+                                onClick={() => setMood("")}
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    padding: "6px 12px",
+                                    borderRadius: "20px",
+                                    background: !mood ? "var(--border-subtle)" : "var(--background)",
+                                    border: `1px solid ${!mood ? "var(--foreground-muted)" : "var(--border-subtle)"}`,
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
+                                }}
+                            >
+                                <span style={{ fontSize: "0.85rem", color: "var(--foreground)" }}>No mood</span>
+                            </button>
+                            {MOODS.map((m) => {
+                                const isSelected = mood === m.id;
+                                return (
+                                    <button
+                                        key={m.id}
+                                        type="button"
+                                        onClick={() => setMood(m.id)}
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            padding: "6px 12px",
+                                            borderRadius: "20px",
+                                            background: isSelected ? `${m.color}15` : "var(--background)",
+                                            border: `1px solid ${isSelected ? m.color : "var(--border-subtle)"}`,
+                                            cursor: "pointer",
+                                            transition: "all 0.2s ease",
+                                            transform: isSelected ? "scale(1.05)" : "scale(1)",
+                                            boxShadow: isSelected ? `0 2px 8px ${m.color}20` : "none",
+                                        }}
+                                        title={m.label}
+                                    >
+                                        <span style={{ fontSize: "1rem" }}>{m.emoji}</span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.85rem",
+                                                fontWeight: isSelected ? 600 : 500,
+                                                color: isSelected ? m.color : "var(--foreground)",
+                                            }}
+                                        >
+                                            {m.label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 

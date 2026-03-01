@@ -107,7 +107,10 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
             justifyContent: "center",
             zIndex: 1000,
             backdropFilter: "blur(4px)",
-        }} onClick={onClose}>
+        }} onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+        }}>
             <div style={{
                 background: "var(--surface)",
                 borderRadius: "16px",

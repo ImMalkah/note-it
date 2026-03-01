@@ -7,9 +7,10 @@ interface EditProfileButtonProps {
     currentBio: string | null;
     currentAvatarUrl: string | null;
     userId: string;
+    currentMood?: string | null;
 }
 
-export default function EditProfileButton({ currentBio, currentAvatarUrl, userId }: EditProfileButtonProps) {
+export default function EditProfileButton({ currentBio, currentAvatarUrl, userId, currentMood }: EditProfileButtonProps) {
     const [isEditing, setIsEditing] = useState(false);
 
     return (
@@ -37,6 +38,7 @@ export default function EditProfileButton({ currentBio, currentAvatarUrl, userId
                 currentBio={currentBio}
                 currentAvatarUrl={currentAvatarUrl}
                 userId={userId}
+                currentMood={currentMood}
             />
         </>
     );

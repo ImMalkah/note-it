@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NoteCard from "@/app/_components/NoteCard";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,22 @@ export default function ProfileTabs({
     userLikes,
     userSaves
 }: ProfileTabsProps) {
+    // Local state for optimistic UI updates (e.g., instant delete)
+    const [localNotes, setLocalNotes] = useState(notes);
+    const [localSaved, setLocalSaved] = useState(savedNotes);
+    const [localLiked, setLocalLiked] = useState(likedNotes);
+
+    // Sync state if props change (e.g., on router refresh)
+    useEffect(() => setLocalNotes(notes), [notes]);
+    useEffect(() => setLocalSaved(savedNotes), [savedNotes]);
+    useEffect(() => setLocalLiked(likedNotes), [likedNotes]);
+
+    const handleDelete = (deletedId: number) => {
+        setLocalNotes(prev => prev.filter(n => n.id !== deletedId));
+        setLocalSaved(prev => prev.filter(n => n.id !== deletedId));
+        setLocalLiked(prev => prev.filter(n => n.id !== deletedId));
+    };
+
     // "notes" | "saved" | "liked"
     const [activeTab, setActiveTab] = useState("notes");
 
@@ -80,7 +96,7 @@ export default function ProfileTabs({
 
         return (
             <div style={{
-                display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "20px"
+                display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", alignItems: "start", gap: "20px"
             }}>
                 {noteList.map((note, index) => (
                     <NoteCard
@@ -96,6 +112,8 @@ export default function ProfileTabs({
                         initialIsLiked={userLikes.has(note.id)}
                         initialIsSaved={userSaves.has(note.id)}
                         authorAvatarUrl={note.authorAvatarUrl}
+                        isAuthor={isOwnProfile}
+                        onDeleteAction={handleDelete}
                     />
                 ))}
             </div>
@@ -168,9 +186,9 @@ export default function ProfileTabs({
             )}
 
             {/* Tab Content */}
-            {activeTab === "notes" && renderNotes(notes, `${username} hasn't written any notes yet.`)}
-            {activeTab === "saved" && renderNotes(savedNotes, isOwnProfile ? "You haven't saved any notes yet." : `${username} hasn't saved any notes.`)}
-            {activeTab === "liked" && renderNotes(likedNotes, isOwnProfile ? "You haven't liked any notes yet." : `${username} hasn't liked any notes.`)}
+            {activeTab === "notes" && renderNotes(localNotes, `${username} hasn't written any notes yet.`)}
+            {activeTab === "saved" && renderNotes(localSaved, isOwnProfile ? "You haven't saved any notes yet." : `${username} hasn't saved any notes.`)}
+            {activeTab === "liked" && renderNotes(localLiked, isOwnProfile ? "You haven't liked any notes yet." : `${username} hasn't liked any notes.`)}
         </div>
     );
 }

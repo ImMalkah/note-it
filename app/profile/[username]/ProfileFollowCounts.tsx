@@ -14,7 +14,7 @@ export default function ProfileFollowCounts({ profileId, followersCount, followi
 
     return (
         <>
-            <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem", color: "var(--foreground)" }}>
+            <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem", color: "var(--foreground)", justifyContent: "center" }}>
                 <span
                     onClick={() => setModalType("followers")}
                     style={{ cursor: "pointer", transition: "opacity 0.2s ease" }}

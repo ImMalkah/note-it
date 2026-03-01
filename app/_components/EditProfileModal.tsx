@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
 import MentionsTextarea from "./MentionsTextarea";
@@ -16,9 +16,20 @@ interface EditProfileModalProps {
     currentInstagram?: string | null;
     currentFacebook?: string | null;
     currentSnapchat?: string | null;
+    currentHeaderUrl?: string | null;
 }
-
-export default function EditProfileModal({ isOpen, onClose, currentBio, currentAvatarUrl, userId, currentMood, currentInstagram, currentFacebook, currentSnapchat }: EditProfileModalProps) {
+export default function EditProfileModal({
+    isOpen,
+    onClose,
+    currentBio,
+    currentAvatarUrl,
+    userId,
+    currentMood,
+    currentInstagram,
+    currentFacebook,
+    currentSnapchat,
+    currentHeaderUrl
+}: EditProfileModalProps) {
     const [bio, setBio] = useState(currentBio || "");
     const [mood, setMood] = useState(currentMood || "");
     const [instagram, setInstagram] = useState(currentInstagram || "");
@@ -26,10 +37,23 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
     const [snapchat, setSnapchat] = useState(currentSnapchat || "");
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatarUrl);
+    const [headerFile, setHeaderFile] = useState<File | null>(null);
+    const [headerPreview, setHeaderPreview] = useState<string | null>(currentHeaderUrl || null);
     const [loading, setLoading] = useState(false);
 
     const supabase = createClient();
     const router = useRouter();
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "unset";
+        }
+        return () => {
+            document.body.style.overflow = "unset";
+        };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -41,10 +65,19 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
         }
     };
 
+    const handleHeaderFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setHeaderFile(file);
+            setHeaderPreview(URL.createObjectURL(file));
+        }
+    };
+
     const handleSave = async () => {
         setLoading(true);
         try {
             let newAvatarUrl = currentAvatarUrl;
+            let newHeaderUrl = currentHeaderUrl;
 
             // 1. Upload new avatar if selected
             if (avatarFile) {
@@ -65,12 +98,31 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                 newAvatarUrl = publicUrlData.publicUrl;
             }
 
+            // 1.5 Upload new header if selected
+            if (headerFile) {
+                const fileExt = headerFile.name.split('.').pop();
+                const fileName = `${userId}/header-${Date.now()}.${fileExt}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from("avatars") // We can reuse avatars storage for profile assets
+                    .upload(fileName, headerFile, { upsert: true });
+
+                if (uploadError) throw uploadError;
+
+                const { data: publicUrlData } = supabase.storage
+                    .from("avatars")
+                    .getPublicUrl(fileName);
+
+                newHeaderUrl = publicUrlData.publicUrl;
+            }
+
             // 2. Update profiles table
             const { error: updateError } = await supabase
                 .from("profiles")
                 .update({
                     bio: bio,
                     avatar_url: newAvatarUrl,
+                    header_url: newHeaderUrl || null,
                     mood: mood || null,
                     instagram: instagram || null,
                     facebook: facebook || null,
@@ -110,6 +162,28 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                 </div>
 
                 <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                    {/* Header Upload */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center", width: "100%" }}>
+                        <label style={{ width: "100%", cursor: "pointer", position: "relative" }}>
+                            <div style={{
+                                width: "100%",
+                                height: "100px",
+                                borderRadius: "12px",
+                                background: headerPreview ? `url(${headerPreview}) center/cover no-repeat` : "linear-gradient(135deg, var(--primary-soft) 0%, var(--gradient-end) 100%)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                border: "2px dashed var(--border-subtle)",
+                                overflow: "hidden"
+                            }}>
+                                <div style={{ background: "rgba(0,0,0,0.5)", padding: "6px 12px", borderRadius: "20px", color: "white", fontSize: "0.8rem", fontWeight: 600 }}>
+                                    Change Background
+                                </div>
+                            </div>
+                            <input type="file" accept="image/*" onChange={handleHeaderFileChange} style={{ display: "none" }} />
+                        </label>
+                    </div>
+
                     {/* Avatar Upload */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
                         <label style={{ cursor: "pointer", position: "relative" }}>

@@ -20,7 +20,7 @@ export default async function ProfilePage({ params }: PageProps) {
     // Fetch the profile
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url, mood, instagram, facebook, snapchat")
+        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url, header_url, mood, instagram, facebook, snapchat")
         .eq("username", username)
         .single();
 
@@ -218,115 +218,40 @@ export default async function ProfilePage({ params }: PageProps) {
                 <div
                     className="gradient-border"
                     style={{
-                        background: "var(--surface)",
+                        backgroundImage: profile.header_url
+                            ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.75)), url(${profile.header_url})`
+                            : "none",
+                        backgroundColor: profile.header_url ? "transparent" : "var(--surface)",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
                         borderRadius: "16px",
-                        padding: "32px 40px",
                         marginBottom: "36px",
+                        position: "relative",
+                        overflow: "hidden", // Important so the banner doesn't spill out
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
                     }}
                 >
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "20px",
-                        }}
-                    >
-                        {/* Avatar */}
-                        {profile.avatar_url ? (
-                            <ExpandableAvatar
-                                avatarUrl={profile.avatar_url}
-                                username={profile.username}
-                                size={64}
-                            />
-                        ) : (
-                            <div
-                                style={{
-                                    width: "64px",
-                                    height: "64px",
-                                    borderRadius: "50%",
-                                    background:
-                                        "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: "1.5rem",
-                                    fontWeight: 800,
-                                    color: "white",
-                                    flexShrink: 0,
-                                }}
-                            >
-                                {(profile.username as string).charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <div>
-                            <h1
-                                className="gradient-text"
-                                style={{
-                                    fontSize: "1.5rem",
-                                    fontWeight: 800,
-                                    margin: 0,
-                                    letterSpacing: "-0.02em",
-                                }}
-                            >
-                                {profile.username}
-                            </h1>
-                            <p
-                                style={{
-                                    fontSize: "0.85rem",
-                                    color: "var(--foreground-muted)",
-                                    margin: "4px 0 0",
-                                }}
-                            >
-                                Member since {memberSince}
-                            </p>
-                            <ProfileFollowCounts
-                                profileId={profile.id}
-                                followersCount={followersCount}
-                                followingCount={followingCount}
-                            />
-                            {profile.bio && (
-                                <p style={{ fontSize: "0.9rem", color: "var(--foreground)", marginTop: "12px", lineHeight: 1.5, maxWidth: "500px", whiteSpace: "pre-wrap" }}>
-                                    {profile.bio}
-                                </p>
-                            )}
+                    {/* Decorative Top Banner (Only if no custom header) */}
+                    {!profile.header_url && (
+                        <div
+                            style={{
+                                height: "140px",
+                                width: "100%",
+                                background: "linear-gradient(135deg, var(--primary-soft) 0%, var(--gradient-end) 100%)",
+                                opacity: 0.8,
+                            }}
+                        />
+                    )}
 
-                            {/* Render User Mood if set */}
-                            {profile.mood && (() => {
-                                const mood = getMoodById(profile.mood);
-                                if (!mood) return null;
-                                return (
-                                    <div style={{ marginTop: "16px", display: "inline-flex" }}>
-                                        <div
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                                padding: "4px 12px",
-                                                borderRadius: "20px",
-                                                background: `${mood.color}15`,
-                                                border: `1px solid ${mood.color}30`,
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            <span style={{ fontSize: "1.1rem" }}>{mood.emoji}</span>
-                                            <span style={{ fontSize: "0.9rem", fontWeight: 600, color: mood.color }}>
-                                                Feeling {mood.label.toLowerCase()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
+                    {/* Spacer when custom header is used to push content down appropriately */}
+                    {profile.header_url && (
+                        <div style={{ height: "140px", width: "100%" }} />
+                    )}
 
-                            {/* Render Social Links */}
-                            <SocialWidgets
-                                instagram={profile.instagram}
-                                facebook={profile.facebook}
-                                snapchat={profile.snapchat}
-                            />
-                        </div>
-                    </div>
-
-                    <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
+                    {/* Action Button (Top Right Absolute) */}
+                    <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 10 }}>
                         {isOwnProfile ? (
                             <EditProfileButton
                                 currentBio={profile.bio}
@@ -336,10 +261,134 @@ export default async function ProfilePage({ params }: PageProps) {
                                 currentInstagram={profile.instagram}
                                 currentFacebook={profile.facebook}
                                 currentSnapchat={profile.snapchat}
+                                currentHeaderUrl={profile.header_url}
                             />
                         ) : user && (
                             <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
                         )}
+                    </div>
+
+                    {/* Unified Profile Content Container over Background */}
+                    <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        width: "100%",
+                        padding: "0 32px 32px",
+                        position: "relative",
+                        zIndex: 2,
+                    }}>
+                        {/* Soft Translucent Wrapper around text/avatar */}
+                        <div style={{
+                            marginTop: "-60px", // Pull it up to overlap the top banner slightly
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            width: "100%",
+                            maxWidth: "600px",
+                            background: "rgba(0, 0, 0, 0.25)", // Very gentle dark tint
+                            backdropFilter: "blur(2px)", // Extremely soft blur
+                            WebkitBackdropFilter: "blur(2px)",
+                            padding: "32px 24px",
+                            borderRadius: "24px", // Round edges cleanly
+                            border: "1px solid rgba(255, 255, 255, 0.05)",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)"
+                        }}>
+                            {/* Avatar (Nested inside the soft container completely) */}
+                            <div style={{
+                                marginBottom: "16px",
+                                borderRadius: "50%",
+                            }}>
+                                {profile.avatar_url ? (
+                                    <ExpandableAvatar
+                                        avatarUrl={profile.avatar_url}
+                                        username={profile.username}
+                                        size={112}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            width: "112px",
+                                            height: "112px",
+                                            borderRadius: "50%",
+                                            background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "2.5rem",
+                                            fontWeight: 800,
+                                            color: "white",
+                                        }}
+                                    >
+                                        {(profile.username as string).charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            <h1
+                                className="gradient-text"
+                                style={{
+                                    fontSize: "1.75rem",
+                                    fontWeight: 800,
+                                    margin: 0,
+                                    letterSpacing: "-0.02em",
+                                    textAlign: "center"
+                                }}
+                            >
+                                {profile.username}
+                            </h1>
+                            <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", margin: "4px 0 0", textAlign: "center" }}>
+                                Member since {memberSince}
+                            </p>
+
+                            <ProfileFollowCounts
+                                profileId={profile.id}
+                                followersCount={followersCount}
+                                followingCount={followingCount}
+                            />
+
+                            {/* Render User Mood if set */}
+                            {profile.mood && (() => {
+                                const mood = getMoodById(profile.mood);
+                                if (!mood) return null;
+                                return (
+                                    <div style={{ marginTop: "16px", display: "flex", justifyContent: "center" }}>
+                                        <div
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "8px",
+                                                padding: "6px 16px",
+                                                borderRadius: "20px",
+                                                background: `${mood.color}15`,
+                                                border: `1px solid ${mood.color}30`,
+                                                whiteSpace: "nowrap",
+                                            }}
+                                        >
+                                            <span style={{ fontSize: "1.1rem" }}>{mood.emoji}</span>
+                                            <span style={{ fontSize: "0.95rem", fontWeight: 600, color: mood.color }}>
+                                                Feeling {mood.label.toLowerCase()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Bio */}
+                            {profile.bio && (
+                                <p style={{ fontSize: "0.95rem", color: "var(--foreground)", marginTop: "20px", lineHeight: 1.6, textAlign: "center", whiteSpace: "pre-wrap" }}>
+                                    {profile.bio}
+                                </p>
+                            )}
+
+                            {/* Render Social Links */}
+                            <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "24px" }}>
+                                <SocialWidgets
+                                    instagram={profile.instagram}
+                                    facebook={profile.facebook}
+                                    snapchat={profile.snapchat}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

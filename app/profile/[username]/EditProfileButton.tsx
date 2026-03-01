@@ -11,9 +11,19 @@ interface EditProfileButtonProps {
     currentInstagram?: string | null;
     currentFacebook?: string | null;
     currentSnapchat?: string | null;
+    currentHeaderUrl?: string | null;
 }
 
-export default function EditProfileButton({ currentBio, currentAvatarUrl, userId, currentMood, currentInstagram, currentFacebook, currentSnapchat }: EditProfileButtonProps) {
+export default function EditProfileButton({
+    currentBio,
+    currentAvatarUrl,
+    userId,
+    currentMood,
+    currentInstagram,
+    currentFacebook,
+    currentSnapchat,
+    currentHeaderUrl
+}: EditProfileButtonProps) {
     const [isEditing, setIsEditing] = useState(false);
 
     return (
@@ -45,6 +55,7 @@ export default function EditProfileButton({ currentBio, currentAvatarUrl, userId
                 currentInstagram={currentInstagram}
                 currentFacebook={currentFacebook}
                 currentSnapchat={currentSnapchat}
+                currentHeaderUrl={currentHeaderUrl}
             />
         </>
     );

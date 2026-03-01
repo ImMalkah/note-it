@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/app/_lib/supabase/server";
 import { notFound } from "next/navigation";
-import NoteCard from "@/app/_components/NoteCard";
-import FollowButton from "@/app/_components/FollowButton";
 import ProfileTabs from "@/app/_components/ProfileTabs";
+import ExpandableAvatar from "@/app/_components/ExpandableAvatar";
+import SocialWidgets from "@/app/_components/SocialWidgets";
+import FollowButton from "@/app/_components/FollowButton";
 import { getMoodById } from "@/app/_utils/moods";
 import ProfileFollowCounts from "./ProfileFollowCounts";
 import EditProfileButton from "./EditProfileButton";
@@ -19,7 +20,7 @@ export default async function ProfilePage({ params }: PageProps) {
     // Fetch the profile
     const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url, mood")
+        .select("id, username, created_at, saved_notes_visible, liked_notes_visible, bio, avatar_url, mood, instagram, facebook, snapchat")
         .eq("username", username)
         .single();
 
@@ -232,15 +233,10 @@ export default async function ProfilePage({ params }: PageProps) {
                     >
                         {/* Avatar */}
                         {profile.avatar_url ? (
-                            <img
-                                src={profile.avatar_url}
-                                alt={profile.username}
-                                style={{
-                                    width: "64px", height: "64px", borderRadius: "50%",
-                                    objectFit: "cover", flexShrink: 0,
-                                    border: "2px solid var(--border-subtle)",
-                                    background: "var(--surface)"
-                                }}
+                            <ExpandableAvatar
+                                avatarUrl={profile.avatar_url}
+                                username={profile.username}
+                                size={64}
                             />
                         ) : (
                             <div
@@ -320,12 +316,27 @@ export default async function ProfilePage({ params }: PageProps) {
                                     </div>
                                 );
                             })()}
+
+                            {/* Render Social Links */}
+                            <SocialWidgets
+                                instagram={profile.instagram}
+                                facebook={profile.facebook}
+                                snapchat={profile.snapchat}
+                            />
                         </div>
                     </div>
 
                     <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
                         {isOwnProfile ? (
-                            <EditProfileButton currentBio={profile.bio} currentAvatarUrl={profile.avatar_url} userId={profile.id} currentMood={profile.mood} />
+                            <EditProfileButton
+                                currentBio={profile.bio}
+                                currentAvatarUrl={profile.avatar_url}
+                                userId={profile.id}
+                                currentMood={profile.mood}
+                                currentInstagram={profile.instagram}
+                                currentFacebook={profile.facebook}
+                                currentSnapchat={profile.snapchat}
+                            />
                         ) : user && (
                             <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
                         )}

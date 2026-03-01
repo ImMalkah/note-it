@@ -8,9 +8,12 @@ interface EditProfileButtonProps {
     currentAvatarUrl: string | null;
     userId: string;
     currentMood?: string | null;
+    currentInstagram?: string | null;
+    currentFacebook?: string | null;
+    currentSnapchat?: string | null;
 }
 
-export default function EditProfileButton({ currentBio, currentAvatarUrl, userId, currentMood }: EditProfileButtonProps) {
+export default function EditProfileButton({ currentBio, currentAvatarUrl, userId, currentMood, currentInstagram, currentFacebook, currentSnapchat }: EditProfileButtonProps) {
     const [isEditing, setIsEditing] = useState(false);
 
     return (
@@ -39,6 +42,9 @@ export default function EditProfileButton({ currentBio, currentAvatarUrl, userId
                 currentAvatarUrl={currentAvatarUrl}
                 userId={userId}
                 currentMood={currentMood}
+                currentInstagram={currentInstagram}
+                currentFacebook={currentFacebook}
+                currentSnapchat={currentSnapchat}
             />
         </>
     );

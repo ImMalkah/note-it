@@ -13,11 +13,17 @@ interface EditProfileModalProps {
     currentAvatarUrl: string | null;
     userId: string;
     currentMood?: string | null;
+    currentInstagram?: string | null;
+    currentFacebook?: string | null;
+    currentSnapchat?: string | null;
 }
 
-export default function EditProfileModal({ isOpen, onClose, currentBio, currentAvatarUrl, userId, currentMood }: EditProfileModalProps) {
+export default function EditProfileModal({ isOpen, onClose, currentBio, currentAvatarUrl, userId, currentMood, currentInstagram, currentFacebook, currentSnapchat }: EditProfileModalProps) {
     const [bio, setBio] = useState(currentBio || "");
     const [mood, setMood] = useState(currentMood || "");
+    const [instagram, setInstagram] = useState(currentInstagram || "");
+    const [facebook, setFacebook] = useState(currentFacebook || "");
+    const [snapchat, setSnapchat] = useState(currentSnapchat || "");
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatarUrl);
     const [loading, setLoading] = useState(false);
@@ -65,7 +71,10 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                 .update({
                     bio: bio,
                     avatar_url: newAvatarUrl,
-                    mood: mood || null
+                    mood: mood || null,
+                    instagram: instagram || null,
+                    facebook: facebook || null,
+                    snapchat: snapchat || null
                 })
                 .eq("id", userId);
 
@@ -90,7 +99,7 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
         }} onClick={onClose}>
             <div style={{
                 background: "var(--surface)", borderRadius: "16px",
-                width: "90%", maxWidth: "400px", overflow: "hidden",
+                width: "90%", maxWidth: "450px", maxHeight: "90vh", overflowY: "auto",
                 display: "flex", flexDirection: "column",
                 border: "1px solid var(--border-subtle)",
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
@@ -198,6 +207,53 @@ export default function EditProfileModal({ isOpen, onClose, currentBio, currentA
                                     </button>
                                 );
                             })}
+                        </div>
+                    </div>
+
+                    {/* Social Links Edit */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderTop: "1px solid var(--border-subtle)", paddingTop: "16px", marginTop: "4px" }}>
+                        <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--foreground)" }}>Social Links</label>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <i className="fa-brands fa-instagram" style={{ color: "#E1306C", fontSize: "1.2rem", width: "24px", textAlign: "center" }}></i>
+                            <input
+                                type="text"
+                                placeholder="Instagram username"
+                                value={instagram}
+                                onChange={(e) => setInstagram(e.target.value)}
+                                style={{
+                                    flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)", color: "var(--foreground)", fontSize: "0.9rem"
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <i className="fa-brands fa-facebook" style={{ color: "#1877F2", fontSize: "1.2rem", width: "24px", textAlign: "center" }}></i>
+                            <input
+                                type="text"
+                                placeholder="Facebook username"
+                                value={facebook}
+                                onChange={(e) => setFacebook(e.target.value)}
+                                style={{
+                                    flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)", color: "var(--foreground)", fontSize: "0.9rem"
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <i className="fa-brands fa-snapchat" style={{ color: "#FFFC00", fontSize: "1.2rem", width: "24px", textAlign: "center" }}></i>
+                            <input
+                                type="text"
+                                placeholder="Snapchat username"
+                                value={snapchat}
+                                onChange={(e) => setSnapchat(e.target.value)}
+                                style={{
+                                    flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-subtle)",
+                                    background: "var(--background)", color: "var(--foreground)", fontSize: "0.9rem"
+                                }}
+                            />
                         </div>
                     </div>
                 </div>

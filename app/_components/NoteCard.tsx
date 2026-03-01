@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from 'react';
 import LikeButton from "./LikeButton";
 import SaveButton from "./SaveButton";
+import { getMoodById } from "@/app/_utils/moods";
 
 interface NoteCardProps {
     id: number;
@@ -83,19 +84,54 @@ export default function NoteCard({
                         marginBottom: "12px",
                     }}
                 >
-                    <h2
-                        style={{
-                            fontSize: "1.25rem",
-                            fontWeight: 700,
-                            color: "var(--foreground)",
-                            margin: 0,
-                            lineHeight: 1.3,
-                            letterSpacing: "-0.01em",
-                            flex: 1,
-                        }}
-                    >
-                        {title}
-                    </h2>
+                    {(() => {
+                        const mood = getMoodById(title);
+                        if (mood) {
+                            return (
+                                <div
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        padding: "4px 12px",
+                                        borderRadius: "20px",
+                                        background: `${mood.color}15`,
+                                        border: `1px solid ${mood.color}30`,
+                                        flex: 1,
+                                    }}
+                                >
+                                    <span style={{ fontSize: "1.2rem" }}>{mood.emoji}</span>
+                                    <span
+                                        style={{
+                                            fontSize: "0.95rem",
+                                            fontWeight: 600,
+                                            color: mood.color,
+                                            letterSpacing: "0.02em",
+                                        }}
+                                    >
+                                        Feeling {mood.label.toLowerCase()}
+                                    </span>
+                                </div>
+                            );
+                        }
+
+                        // Fallback for legacy text titles
+                        return (
+                            <h2
+                                style={{
+                                    fontSize: "1.25rem",
+                                    fontWeight: 700,
+                                    color: "var(--foreground)",
+                                    margin: 0,
+                                    lineHeight: 1.3,
+                                    letterSpacing: "-0.01em",
+                                    flex: 1,
+                                }}
+                            >
+                                {title}
+                            </h2>
+                        );
+                    })()}
 
                     <Link
                         href={`/note/${id}`}

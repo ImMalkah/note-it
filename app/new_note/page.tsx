@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/_lib/supabase/client";
 import MentionsTextarea from "@/app/_components/MentionsTextarea";
+import { MOODS } from "@/app/_utils/moods";
 
 export default function NewNotePage() {
     const [title, setTitle] = useState("");
@@ -153,46 +154,77 @@ export default function NewNotePage() {
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: "20px" }}>
                         <label
-                            htmlFor="title"
                             style={{
                                 display: "block",
                                 fontSize: "0.8rem",
                                 fontWeight: 500,
                                 color: "var(--foreground-muted)",
-                                marginBottom: "8px",
+                                marginBottom: "12px",
                                 textTransform: "uppercase",
                                 letterSpacing: "0.05em",
                             }}
                         >
-                            Title
+                            How are you feeling?
                         </label>
-                        <input
-                            id="title"
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            maxLength={100}
-                            placeholder="Give your note a title..."
+                        <div
                             style={{
-                                width: "100%",
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--border-subtle)",
-                                background: "var(--background)",
-                                color: "var(--foreground)",
-                                fontSize: "0.9rem",
-                                outline: "none",
-                                transition: "border-color 0.2s ease",
-                                boxSizing: "border-box",
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "10px",
                             }}
-                            onFocus={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--primary)")
-                            }
-                            onBlur={(e) =>
-                                (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                            }
-                        />
+                        >
+                            {MOODS.map((mood) => {
+                                const isSelected = title === mood.id;
+                                return (
+                                    <button
+                                        key={mood.id}
+                                        type="button"
+                                        onClick={() => setTitle(mood.id)}
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            padding: "8px 16px",
+                                            borderRadius: "20px",
+                                            background: isSelected ? `${mood.color}15` : "var(--background)",
+                                            border: `1px solid ${isSelected ? mood.color : "var(--border-subtle)"}`,
+                                            cursor: "pointer",
+                                            transition: "all 0.2s ease",
+                                            transform: isSelected ? "scale(1.05)" : "scale(1)",
+                                            boxShadow: isSelected ? `0 4px 12px ${mood.color}20` : "none",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (!isSelected) {
+                                                e.currentTarget.style.borderColor = "var(--border)";
+                                                e.currentTarget.style.background = "var(--surface-hover)";
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!isSelected) {
+                                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                                                e.currentTarget.style.background = "var(--background)";
+                                            }
+                                        }}
+                                    >
+                                        <span style={{ fontSize: "1.1rem" }}>{mood.emoji}</span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.9rem",
+                                                fontWeight: isSelected ? 600 : 500,
+                                                color: isSelected ? mood.color : "var(--foreground)",
+                                            }}
+                                        >
+                                            {mood.label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {error && !title && (
+                            <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "8px" }}>
+                                Please select a mood.
+                            </p>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: "28px" }}>

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import DeleteNoteButton from "./DeleteNoteButton";
 import LikeButton from "@/app/_components/LikeButton";
 import SaveButton from "@/app/_components/SaveButton";
+import { getMoodById } from "@/app/_utils/moods";
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -112,18 +113,53 @@ export default async function NotePage({ params }: PageProps) {
                     }}
                 >
                     {/* Title */}
-                    <h1
-                        style={{
-                            fontSize: "2rem",
-                            fontWeight: 800,
-                            color: "var(--foreground)",
-                            margin: "0 0 16px",
-                            letterSpacing: "-0.02em",
-                            lineHeight: 1.3,
-                        }}
-                    >
-                        {note.title}
-                    </h1>
+                    {(() => {
+                        const mood = getMoodById(note.title);
+                        if (mood) {
+                            return (
+                                <div
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                        padding: "8px 24px",
+                                        borderRadius: "100px",
+                                        background: `${mood.color}15`,
+                                        border: `1px solid ${mood.color}30`,
+                                        marginBottom: "24px",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "1.8rem" }}>{mood.emoji}</span>
+                                    <span
+                                        style={{
+                                            fontSize: "1.25rem",
+                                            fontWeight: 700,
+                                            color: mood.color,
+                                            letterSpacing: "0.02em",
+                                        }}
+                                    >
+                                        Feeling {mood.label.toLowerCase()}
+                                    </span>
+                                </div>
+                            );
+                        }
+
+                        // Fallback for legacy text titles
+                        return (
+                            <h1
+                                style={{
+                                    fontSize: "2rem",
+                                    fontWeight: 800,
+                                    color: "var(--foreground)",
+                                    margin: "0 0 16px",
+                                    letterSpacing: "-0.02em",
+                                    lineHeight: 1.3,
+                                }}
+                            >
+                                {note.title}
+                            </h1>
+                        );
+                    })()}
 
                     {/* Author and Date */}
                     <div

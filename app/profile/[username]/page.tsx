@@ -8,6 +8,7 @@ import FollowButton from "@/app/_components/FollowButton";
 import { getMoodById } from "@/app/_utils/moods";
 import ProfileFollowCounts from "./ProfileFollowCounts";
 import EditProfileButton from "./EditProfileButton";
+import ExpandableBackground from "@/app/_components/ExpandableBackground";
 
 interface PageProps {
     params: Promise<{ username: string }>;
@@ -233,6 +234,11 @@ export default async function ProfilePage({ params }: PageProps) {
                         alignItems: "center",
                     }}
                 >
+                    {/* Clickable Overlay for Background Expansion (Absolute positioned to cover the whole card behind content) */}
+                    {profile.header_url && (
+                        <ExpandableBackground headerUrl={profile.header_url} />
+                    )}
+
                     {/* Decorative Top Banner (Only if no custom header) */}
                     {!profile.header_url && (
                         <div
@@ -247,7 +253,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
                     {/* Spacer when custom header is used to push content down appropriately */}
                     {profile.header_url && (
-                        <div style={{ height: "140px", width: "100%" }} />
+                        <div style={{ height: "140px", width: "100%", zIndex: 2, pointerEvents: "none" }} />
                     )}
 
                     {/* Action Button (Top Right Absolute) */}
@@ -277,6 +283,7 @@ export default async function ProfilePage({ params }: PageProps) {
                         padding: "0 32px 32px",
                         position: "relative",
                         zIndex: 2,
+                        pointerEvents: "none", // Let clicks pass through the transparent parts
                     }}>
                         {/* Soft Translucent Wrapper around text/avatar */}
                         <div style={{
@@ -292,7 +299,8 @@ export default async function ProfilePage({ params }: PageProps) {
                             padding: "32px 24px",
                             borderRadius: "24px", // Round edges cleanly
                             border: "1px solid rgba(255, 255, 255, 0.05)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)"
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+                            pointerEvents: "auto", // Re-enable clicks for the actual content
                         }}>
                             {/* Avatar (Nested inside the soft container completely) */}
                             <div style={{

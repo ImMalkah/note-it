@@ -21,10 +21,11 @@ export default async function NotificationsPage() {
             created_at, 
             type,
             actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), 
-            note:notes(id, title)
+            note:notes(id, mood)
         `)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 19);
 
     return (
         <div
@@ -59,10 +60,14 @@ export default async function NotificationsPage() {
                 </div>
 
                 <div
-                    className="gradient-border"
+                    className="animate-slide-down"
                     style={{
-                        background: "var(--surface)",
-                        borderRadius: "16px",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        backdropFilter: "blur(32px) saturate(180%)",
+                        WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        boxShadow: "0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                        borderRadius: "24px",
                         overflow: "hidden"
                     }}
                 >

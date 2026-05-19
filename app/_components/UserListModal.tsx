@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/app/_lib/supabase/client";
 import Link from "next/link";
 import FollowButton from "./FollowButton";
@@ -24,6 +25,7 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
     const [loading, setLoading] = useState(true);
     const [currentUserFollowing, setCurrentUserFollowing] = useState<Set<string>>(new Set());
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     const supabase = createClient();
 
@@ -93,11 +95,12 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
         };
 
         fetchData();
+        setMounted(true);
     }, [isOpen, type, targetId, supabase]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
-    return (
+    const modalContent = (
         <div style={{
             position: "fixed",
             top: 0, left: 0, right: 0, bottom: 0,
@@ -112,22 +115,24 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
             onClose();
         }}>
             <div style={{
-                background: "var(--surface)",
-                borderRadius: "16px",
+                background: "rgba(255, 255, 255, 0.02)",
+                backdropFilter: "blur(32px) saturate(180%)",
+                WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                borderRadius: "24px",
                 width: "90%",
                 maxWidth: "400px",
                 maxHeight: "80vh",
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
-                border: "1px solid var(--border-subtle)",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                boxShadow: "0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
             }} onClick={(e) => e.stopPropagation()}>
 
                 {/* Header */}
                 <div style={{
                     padding: "20px 24px",
-                    borderBottom: "1px solid var(--border-subtle)",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center"
@@ -193,4 +198,6 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 }

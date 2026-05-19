@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -17,15 +17,74 @@ interface Notification {
     } | null;
     note: {
         id: number;
-        title: string;
+        mood: string | null;
     } | null;
 }
 
 export default function NotificationClientList({ userId, initialNotifications }: { userId: string, initialNotifications: Notification[] }) {
     const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
     const [markingAll, setMarkingAll] = useState(false);
+    
+    // Pagination states
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(initialNotifications.length >= 20);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const observerTarget = useRef<HTMLDivElement>(null);
+
     const supabase = createClient();
     const router = useRouter();
+
+    const fetchMoreNotifications = useCallback(async () => {
+        if (loadingMore || !hasMore || !userId) return;
+        setLoadingMore(true);
+
+        const from = page * 20;
+        const to = from + 19;
+
+        const { data: newNotifs } = await supabase
+            .from("notifications")
+            .select(`
+                id, 
+                is_read, 
+                created_at, 
+                type,
+                actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), 
+                note:notes(id, mood)
+            `)
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .range(from, to);
+
+        if (newNotifs && newNotifs.length > 0) {
+            setNotifications(prev => {
+                const existingIds = new Set(prev.map(n => n.id));
+                const uniqueNew = newNotifs.filter(n => !existingIds.has(n.id));
+                return [...prev, ...uniqueNew as unknown as Notification[]];
+            });
+            setPage(p => p + 1);
+            if (newNotifs.length < 20) setHasMore(false);
+        } else {
+            setHasMore(false);
+        }
+        setLoadingMore(false);
+    }, [page, hasMore, loadingMore, userId, supabase]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting) {
+                    fetchMoreNotifications();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [fetchMoreNotifications]);
 
     const fetchSingleNotification = async (id: number) => {
         const { data } = await supabase
@@ -36,7 +95,7 @@ export default function NotificationClientList({ userId, initialNotifications }:
                 created_at, 
                 type,
                 actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), 
-                note:notes(id, title)
+                note:notes(id, mood)
             `)
             .eq("id", id)
             .single();
@@ -178,16 +237,16 @@ export default function NotificationClientList({ userId, initialNotifications }:
                 let icon = "🔔";
 
                 if (notif.type === 'like') {
-                    actionText = "liked";
+                    actionText = "liked your post";
                     icon = "❤️";
                 } else if (notif.type === 'save') {
-                    actionText = "saved";
+                    actionText = "saved your post";
                     icon = "🔖";
                 } else if (notif.type === 'follow') {
-                    actionText = "followed";
+                    actionText = "followed you";
                     icon = "👤";
                 } else if (notif.type === 'mention') {
-                    actionText = "mentioned you in";
+                    actionText = "mentioned you";
                     icon = "💬";
                 }
 
@@ -197,19 +256,27 @@ export default function NotificationClientList({ userId, initialNotifications }:
                         onClick={() => handleNotificationClick(notif)}
                         style={{
                             display: "flex",
-                            alignItems: "flex-start",
+                            alignItems: "center",
                             gap: "16px",
                             padding: "20px 24px",
-                            background: notif.is_read ? "transparent" : "var(--primary-soft)",
-                            borderBottom: isLast ? "none" : "1px solid var(--border-subtle)",
+                            background: notif.is_read ? "transparent" : "rgba(255, 255, 255, 0.04)",
+                            borderBottom: isLast ? "none" : "1px solid rgba(255, 255, 255, 0.06)",
                             cursor: "pointer",
-                            transition: "background 0.2s ease",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                         }}
                         onMouseEnter={(e) => {
-                            if (notif.is_read) e.currentTarget.style.background = "var(--surface-hover)";
+                            if (notif.is_read) {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                            } else {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                            }
                         }}
                         onMouseLeave={(e) => {
-                            if (notif.is_read) e.currentTarget.style.background = "transparent";
+                            if (notif.is_read) {
+                                e.currentTarget.style.background = "transparent";
+                            } else {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.04)";
+                            }
                         }}
                     >
                         {/* Avatar */}
@@ -226,13 +293,8 @@ export default function NotificationClientList({ userId, initialNotifications }:
                         )}
 
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: "0 0 4px 0", fontSize: "0.95rem", color: "var(--foreground)", lineHeight: 1.4, fontWeight: notif.is_read ? 400 : 700 }}>
-                                <span style={{ color: "var(--foreground)" }}>{actor?.username}</span> {actionText}{" "}
-                                {notif.type !== 'follow' && notif.note ? (
-                                    <span style={{ fontStyle: "italic", opacity: 0.9 }}>&quot;{notif.note?.title}&quot;</span>
-                                ) : notif.type === 'follow' ? (
-                                    "you"
-                                ) : "a note"}
+                            <p style={{ margin: "0 0 4px 0", fontSize: "0.95rem", color: "var(--foreground)", lineHeight: 1.4, fontWeight: notif.is_read ? 400 : 600 }}>
+                                <span style={{ color: "var(--foreground)", fontWeight: 700 }}>{actor?.username}</span> {actionText}
                             </p>
                             <span style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", fontWeight: 500 }}>
                                 {timeStr}
@@ -245,6 +307,30 @@ export default function NotificationClientList({ userId, initialNotifications }:
                     </div>
                 );
             })}
+            
+            {/* Infinite Scroll Trigger */}
+            <div 
+                ref={observerTarget} 
+                style={{ 
+                    height: "40px", 
+                    display: "flex", 
+                    justifyContent: "center", 
+                    alignItems: "center",
+                    padding: "16px 0",
+                    borderTop: notifications.length > 0 ? "1px solid rgba(255, 255, 255, 0.06)" : "none"
+                }}
+            >
+                {loadingMore && (
+                    <div style={{ color: "var(--primary)", fontSize: "0.85rem" }}>
+                        Loading older notifications...
+                    </div>
+                )}
+                {!hasMore && notifications.length > 0 && (
+                    <div style={{ color: "var(--foreground-muted)", fontSize: "0.85rem" }}>
+                        You're all caught up!
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

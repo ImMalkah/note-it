@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NoteFeed from "./_components/NoteFeed";
+import { PenLine } from "lucide-react";
 import { createClient } from "./_lib/supabase/server";
 
 export default async function Home() {
@@ -9,25 +10,33 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Basic query
-  let query = supabase
-    .from("notes")
-    .select(`
-      id, 
-      title, 
-      content, 
-      created_at, 
-      author_id,
-      profiles!notes_author_id_fkey(username, avatar_url),
-      note_likes(count),
-      saved_notes(count)
-    `)
-    .order("created_at", { ascending: false });
+  const [notesRes, countRes] = await Promise.all([
+    supabase
+      .from("notes")
+      .select(`
+        id, 
+        mood, 
+        content, 
+        created_at, 
+        author_id,
+        profiles!notes_author_id_fkey(username, avatar_url),
+        note_likes(count),
+        saved_notes(count)
+      `)
+      .order("created_at", { ascending: false })
+      .range(0, 19),
+    supabase
+      .from("notes")
+      .select("id", { count: 'exact', head: true })
+  ]);
+
+  const notes = notesRes.data;
+  const error = notesRes.error;
+  const totalNotesCount = countRes.count || 0;
 
   // If user is logged in, only fetch notes from followed users
   // (Assuming home page is a feed. If no follows exist, it will be empty)
   // For now, let's just show all notes, but pass down like/save status
-  const { data: notes, error } = await query;
 
   // If logged in, fetch the user's specific likes and saves to pass to the client components
   let userLikes = new Set<number>();
@@ -49,7 +58,7 @@ export default async function Home() {
     const profile = note.profiles as unknown as { username: string, avatar_url: string | null } | null;
     return {
       id: note.id as number,
-      title: note.title as string,
+      mood: note.mood as string | null,
       content: note.content as string,
       author: profile?.username || "unknown",
       authorId: note.author_id as string,
@@ -73,8 +82,7 @@ export default async function Home() {
     <div
       style={{
         minHeight: "calc(100vh - 64px)",
-        background:
-          "radial-gradient(ellipse at top, var(--background-secondary) 0%, var(--background) 60%)",
+        background: "transparent",
       }}
     >
       <div
@@ -113,35 +121,15 @@ export default async function Home() {
                 fontWeight: 400,
               }}
             >
-              {formattedNotes.length} note
-              {formattedNotes.length !== 1 ? "s" : ""} shared with love
+              {totalNotesCount} note
+              {totalNotesCount !== 1 ? "s" : ""} shared with love
             </p>
           </div>
 
           {user && (
-            <Link
-              href="/new_note"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "12px 24px",
-                borderRadius: "12px",
-                background:
-                  "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                color: "white",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                letterSpacing: "0.01em",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                boxShadow: "0 4px 15px var(--primary-soft)",
-                textDecoration: "none",
-              }}
-            >
-              <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>+</span>
-              new note
+            <Link href="/new_note" className="btn-compose">
+              <PenLine size={15} strokeWidth={2.5} />
+              New Note
             </Link>
           )}
         </div>

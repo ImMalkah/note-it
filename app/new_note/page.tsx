@@ -8,7 +8,7 @@ import MentionsTextarea from "@/app/_components/MentionsTextarea";
 import { MOODS } from "@/app/_utils/moods";
 
 export default function NewNotePage() {
-    const [title, setTitle] = useState("");
+    const [selectedMood, setSelectedMood] = useState("");
     const [content, setContent] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ export default function NewNotePage() {
         }
 
         const { data: noteData, error: insertError } = await supabase.from("notes").insert({
-            title: title.trim(),
+            mood: selectedMood.trim() || null,
             content: content.trim(),
             author_id: user.id,
         }).select("id").single();
@@ -43,7 +43,7 @@ export default function NewNotePage() {
         }
 
         // --- Notifications Logic ---
-        const combinedText = `${title.trim()} ${content.trim()}`;
+        const combinedText = `${content.trim()}`;
         const mentionRegex = /@([a-zA-Z0-9_]+)/g;
         const mentionedUsernames = new Set<string>();
         let match;
@@ -82,25 +82,31 @@ export default function NewNotePage() {
     };
 
     return (
+
         <div
             style={{
                 minHeight: "calc(100vh - 64px)",
                 display: "flex",
                 alignItems: "flex-start",
                 justifyContent: "center",
-                background:
-                    "radial-gradient(ellipse at top, var(--background-secondary) 0%, var(--background) 60%)",
+                background: "transparent",
                 padding: "60px 24px 80px",
             }}
         >
             <div
-                className="gradient-border"
+                className="animate-slide-down stagger-children"
                 style={{
-                    background: "var(--surface)",
-                    borderRadius: "16px",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    backdropFilter: "blur(32px) saturate(180%)",
+                    WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    boxShadow: "0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                    borderRadius: "24px",
                     padding: "40px",
                     width: "100%",
                     maxWidth: "800px",
+                    position: "relative",
+                    overflow: "hidden",
                 }}
             >
                 <div
@@ -123,30 +129,9 @@ export default function NewNotePage() {
                         >
                             New Note
                         </h1>
-                        <p
-                            style={{
-                                fontSize: "0.9rem",
-                                color: "var(--foreground-muted)",
-                                margin: "4px 0 0",
-                            }}
-                        >
-                            Share something with everyone
-                        </p>
+
                     </div>
-                    <Link
-                        href="/"
-                        style={{
-                            padding: "8px 16px",
-                            borderRadius: "10px",
-                            fontSize: "0.85rem",
-                            fontWeight: 500,
-                            color: "var(--foreground-muted)",
-                            background: "var(--background)",
-                            border: "1px solid var(--border-subtle)",
-                            textDecoration: "none",
-                            transition: "all 0.2s ease",
-                        }}
-                    >
+                    <Link href="/" className="btn btn-ghost btn-sm">
                         ← Back
                     </Link>
                 </div>
@@ -174,39 +159,43 @@ export default function NewNotePage() {
                             }}
                         >
                             {MOODS.map((mood) => {
-                                const isSelected = title === mood.id;
+                                const isSelected = selectedMood === mood.id;
                                 return (
                                     <button
                                         key={mood.id}
                                         type="button"
-                                        onClick={() => setTitle(mood.id)}
+                                        onClick={() => setSelectedMood(mood.id)}
                                         style={{
                                             display: "inline-flex",
                                             alignItems: "center",
-                                            gap: "6px",
-                                            padding: "8px 16px",
+                                            gap: "8px",
+                                            padding: "10px 18px",
                                             borderRadius: "20px",
-                                            background: isSelected ? `${mood.color}15` : "var(--background)",
-                                            border: `1px solid ${isSelected ? mood.color : "var(--border-subtle)"}`,
+                                            background: isSelected ? `${mood.color}15` : "rgba(255, 255, 255, 0.03)",
+                                            border: `1px solid ${isSelected ? mood.color : "rgba(255, 255, 255, 0.1)"}`,
                                             cursor: "pointer",
-                                            transition: "all 0.2s ease",
-                                            transform: isSelected ? "scale(1.05)" : "scale(1)",
-                                            boxShadow: isSelected ? `0 4px 12px ${mood.color}20` : "none",
+                                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                            transform: isSelected ? "translateY(-2px)" : "translateY(0)",
+                                            boxShadow: isSelected ? `0 8px 16px ${mood.color}20, inset 0 2px 4px rgba(255,255,255,0.1)` : "inset 0 2px 4px rgba(0,0,0,0.1)",
                                         }}
                                         onMouseEnter={(e) => {
                                             if (!isSelected) {
-                                                e.currentTarget.style.borderColor = "var(--border)";
-                                                e.currentTarget.style.background = "var(--surface-hover)";
+                                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                                                e.currentTarget.style.transform = "translateY(-1px)";
                                             }
                                         }}
                                         onMouseLeave={(e) => {
                                             if (!isSelected) {
-                                                e.currentTarget.style.borderColor = "var(--border-subtle)";
-                                                e.currentTarget.style.background = "var(--background)";
+                                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                                                e.currentTarget.style.transform = "translateY(0)";
                                             }
                                         }}
                                     >
-                                        <span style={{ fontSize: "1.1rem" }}>{mood.emoji}</span>
+                                        <div style={{ color: isSelected ? mood.color : "var(--foreground-muted)", transition: "color 0.2s ease", display: "flex" }}>
+                                            <mood.icon size={18} strokeWidth={isSelected ? 2.5 : 2} />
+                                        </div>
                                         <span
                                             style={{
                                                 fontSize: "0.9rem",
@@ -220,11 +209,7 @@ export default function NewNotePage() {
                                 );
                             })}
                         </div>
-                        {error && !title && (
-                            <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "8px" }}>
-                                Please select a mood.
-                            </p>
-                        )}
+
                     </div>
 
                     <div style={{ marginBottom: "28px" }}>
@@ -252,19 +237,20 @@ export default function NewNotePage() {
                             maxLength={300}
                             style={{
                                 width: "100%",
-                                padding: "12px 16px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--border-subtle)",
-                                background: "var(--background)",
+                                padding: "14px 16px",
+                                borderRadius: "12px",
+                                border: "1px solid rgba(255, 255, 255, 0.1)",
+                                background: "rgba(0, 0, 0, 0.2)",
                                 color: "var(--foreground)",
-                                fontSize: "0.9rem",
+                                fontSize: "0.95rem",
                                 outline: "none",
-                                transition: "border-color 0.2s ease",
+                                transition: "all 0.3s ease",
                                 resize: "vertical",
                                 minHeight: "120px",
                                 fontFamily: "inherit",
                                 lineHeight: 1.6,
                                 boxSizing: "border-box",
+                                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)",
                             }}
                         />
                         <div
@@ -299,24 +285,14 @@ export default function NewNotePage() {
 
                     <button
                         type="submit"
-                        disabled={loading}
-                        style={{
-                            width: "100%",
-                            padding: "14px",
-                            borderRadius: "12px",
-                            background: loading
-                                ? "var(--surface-hover)"
-                                : "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                            color: "white",
-                            fontSize: "0.9rem",
-                            fontWeight: 600,
-                            border: "none",
-                            cursor: loading ? "not-allowed" : "pointer",
-                            transition: "all 0.3s ease",
-                            boxShadow: loading ? "none" : "0 4px 15px var(--primary-soft)",
-                        }}
+                        disabled={loading || !content.trim()}
+                        className="btn-publish"
+                        style={{ fontFamily: "var(--font-sans)" }}
                     >
-                        {loading ? "Publishing..." : "Publish Note"}
+                        {loading
+                            ? <><span className="btn-spinner" /> Noting...</>
+                            : "Note"
+                        }
                     </button>
                 </form>
             </div>

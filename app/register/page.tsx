@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/_lib/supabase/client";
@@ -14,6 +14,16 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const prefillUsername = params.get("username");
+            if (prefillUsername) {
+                setUsername(prefillUsername);
+            }
+        }
+    }, []);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -84,19 +94,23 @@ export default function RegisterPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background:
-                    "radial-gradient(ellipse at top, var(--background-secondary) 0%, var(--background) 60%)",
+                background: "transparent",
                 padding: "24px",
             }}
         >
             <div
-                className="gradient-border"
                 style={{
-                    background: "var(--surface)",
-                    borderRadius: "16px",
-                    padding: "40px",
+                    background: "rgba(255, 255, 255, 0.02)",
+                    backdropFilter: "blur(32px) saturate(180%)",
+                    WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    boxShadow: "0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                    borderRadius: "24px",
+                    padding: "48px 40px",
                     width: "100%",
-                    maxWidth: "420px",
+                    maxWidth: "440px",
+                    position: "relative",
+                    overflow: "hidden",
                 }}
             >
                 <h1
@@ -121,7 +135,7 @@ export default function RegisterPage() {
                 </p>
 
                 {success ? (
-                    <div style={{ textAlign: "center", marginBottom: "32px" }}>
+                    <div className="stagger-children" style={{ textAlign: "center", marginBottom: "32px" }}>
                         <div
                             style={{
                                 display: "inline-flex",
@@ -130,22 +144,23 @@ export default function RegisterPage() {
                                 width: "64px",
                                 height: "64px",
                                 borderRadius: "50%",
-                                background: "rgba(16, 185, 129, 0.1)",
+                                background: "rgba(16, 185, 129, 0.15)",
                                 color: "#10b981",
                                 marginBottom: "16px",
+                                boxShadow: "0 0 20px rgba(16, 185, 129, 0.2)",
                             }}
                         >
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                         </div>
-                        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "8px" }}>Check your email</h2>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "8px", color: "var(--foreground)" }}>Check your email</h2>
                         <p style={{ color: "var(--foreground-muted)", fontSize: "0.95rem", lineHeight: 1.5 }}>
                             We sent a confirmation link to <strong style={{ color: "var(--foreground)" }}>{email}</strong>. Please click the link to confirm your account and log in.
                         </p>
                     </div>
                 ) : (
-                    <form onSubmit={handleRegister}>
+                    <form onSubmit={handleRegister} className="stagger-children">
                         <div style={{ marginBottom: "20px" }}>
                             <label
                                 htmlFor="username"
@@ -170,22 +185,25 @@ export default function RegisterPage() {
                                 placeholder="malkah"
                                 style={{
                                     width: "100%",
-                                    padding: "12px 16px",
-                                    borderRadius: "10px",
-                                    border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)",
+                                    padding: "14px 16px",
+                                    borderRadius: "12px",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    background: "rgba(0, 0, 0, 0.2)",
                                     color: "var(--foreground)",
-                                    fontSize: "0.9rem",
+                                    fontSize: "0.95rem",
                                     outline: "none",
-                                    transition: "border-color 0.2s ease",
+                                    transition: "all 0.3s ease",
                                     boxSizing: "border-box",
+                                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)",
                                 }}
-                                onFocus={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--primary)")
-                                }
-                                onBlur={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                                }
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = "var(--primary)";
+                                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-soft), inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                                    e.currentTarget.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
                             />
                         </div>
 
@@ -213,22 +231,25 @@ export default function RegisterPage() {
                                 placeholder="your@email.com"
                                 style={{
                                     width: "100%",
-                                    padding: "12px 16px",
-                                    borderRadius: "10px",
-                                    border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)",
+                                    padding: "14px 16px",
+                                    borderRadius: "12px",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    background: "rgba(0, 0, 0, 0.2)",
                                     color: "var(--foreground)",
-                                    fontSize: "0.9rem",
+                                    fontSize: "0.95rem",
                                     outline: "none",
-                                    transition: "border-color 0.2s ease",
+                                    transition: "all 0.3s ease",
                                     boxSizing: "border-box",
+                                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)",
                                 }}
-                                onFocus={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--primary)")
-                                }
-                                onBlur={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                                }
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = "var(--primary)";
+                                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-soft), inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                                    e.currentTarget.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
                             />
                         </div>
 
@@ -257,26 +278,29 @@ export default function RegisterPage() {
                                 placeholder="••••••••"
                                 style={{
                                     width: "100%",
-                                    padding: "12px 16px",
-                                    borderRadius: "10px",
-                                    border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)",
+                                    padding: "14px 16px",
+                                    borderRadius: "12px",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    background: "rgba(0, 0, 0, 0.2)",
                                     color: "var(--foreground)",
-                                    fontSize: "0.9rem",
+                                    fontSize: "0.95rem",
                                     outline: "none",
-                                    transition: "border-color 0.2s ease",
+                                    transition: "all 0.3s ease",
                                     boxSizing: "border-box",
+                                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)",
                                 }}
-                                onFocus={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--primary)")
-                                }
-                                onBlur={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                                }
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = "var(--primary)";
+                                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-soft), inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                                    e.currentTarget.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
                             />
                         </div>
 
-                        <div style={{ marginBottom: "28px" }}>
+                        <div style={{ marginBottom: "32px" }}>
                             <label
                                 htmlFor="confirmPassword"
                                 style={{
@@ -300,22 +324,25 @@ export default function RegisterPage() {
                                 placeholder="••••••••"
                                 style={{
                                     width: "100%",
-                                    padding: "12px 16px",
-                                    borderRadius: "10px",
-                                    border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)",
+                                    padding: "14px 16px",
+                                    borderRadius: "12px",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    background: "rgba(0, 0, 0, 0.2)",
                                     color: "var(--foreground)",
-                                    fontSize: "0.9rem",
+                                    fontSize: "0.95rem",
                                     outline: "none",
-                                    transition: "border-color 0.2s ease",
+                                    transition: "all 0.3s ease",
                                     boxSizing: "border-box",
+                                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)",
                                 }}
-                                onFocus={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--primary)")
-                                }
-                                onBlur={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                                }
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = "var(--primary)";
+                                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--primary-soft), inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                                    e.currentTarget.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.2)";
+                                }}
                             />
                         </div>
 
@@ -340,18 +367,19 @@ export default function RegisterPage() {
                             disabled={loading}
                             style={{
                                 width: "100%",
-                                padding: "14px",
-                                borderRadius: "12px",
+                                padding: "16px",
+                                borderRadius: "14px",
                                 background: loading
-                                    ? "var(--surface-hover)"
+                                    ? "rgba(255, 255, 255, 0.1)"
                                     : "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
                                 color: "white",
-                                fontSize: "0.9rem",
-                                fontWeight: 600,
+                                fontSize: "1rem",
+                                fontWeight: 700,
                                 border: "none",
                                 cursor: loading ? "not-allowed" : "pointer",
                                 transition: "all 0.3s ease",
-                                boxShadow: loading ? "none" : "0 4px 15px var(--primary-soft)",
+                                boxShadow: loading ? "none" : "0 8px 25px var(--primary-soft)",
+                                transform: loading ? "scale(0.98)" : "scale(1)",
                             }}
                         >
                             {loading ? "Creating account..." : "Create account"}

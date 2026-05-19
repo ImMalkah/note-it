@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 interface Note {
     id: number;
-    title: string;
+    mood: string | null;
     content: string;
     author: string;
     date: string;
@@ -88,7 +88,7 @@ export default function ProfileTabs({
                     <NoteCard
                         key={note.id}
                         id={note.id}
-                        title={note.title}
+                        mood={note.mood}
                         author={note.author}
                         date={note.date}
                         content={note.content}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import NotificationBell from "./NotificationBell";
 import UserSearchBar from "./UserSearchBar";
@@ -13,10 +13,35 @@ interface NavbarProps {
 
 export default function Navbar({ user }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
+  
   const pathname = usePathname();
   const router = useRouter();
 
   const activePage = getActivePage(pathname);
+
+  useEffect(() => {
+    if (!isPending && navigatingHref) {
+      setMobileOpen(false);
+      setNavigatingHref(null);
+    }
+  }, [isPending, pathname, navigatingHref]);
+
+  const handleNavClick = (href: string, e: React.MouseEvent) => {
+    // If it's a mobile click and not just opening in new tab
+    if (window.innerWidth <= 640 && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (href === pathname) {
+        setMobileOpen(false);
+        return;
+      }
+      setNavigatingHref(href);
+      startTransition(() => {
+        router.push(href);
+      });
+    }
+  };
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -32,10 +57,29 @@ export default function Navbar({ user }: NavbarProps) {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        borderBottom: "1px solid var(--border-subtle)",
-        background: "var(--background)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(255, 255, 255, 0.02)",
+        backdropFilter: "blur(32px) saturate(180%)",
+        WebkitBackdropFilter: "blur(32px) saturate(180%)",
+        boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1)",
       }}
     >
+      {/* Top Loading Bar */}
+      {isPending && (
+        <div
+          className="loading-bar"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            height: "3px",
+            background: "var(--primary)",
+            boxShadow: "0 0 10px var(--primary-glow), 0 0 5px var(--primary)",
+            zIndex: 100,
+          }}
+        />
+      )}
+
       <div
         style={{
           maxWidth: "1200px",
@@ -117,26 +161,7 @@ export default function Navbar({ user }: NavbarProps) {
               <>
                 <button
                   onClick={handleSignOut}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "10px",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    letterSpacing: "0.01em",
-                    transition: "all 0.2s ease",
-                    color: "var(--foreground-muted)",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "var(--foreground)";
-                    e.currentTarget.style.background = "var(--surface-hover)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "var(--foreground-muted)";
-                    e.currentTarget.style.background = "transparent";
-                  }}
+                  className="btn btn-ghost btn-sm"
                 >
                   Logout
                 </button>
@@ -154,35 +179,53 @@ export default function Navbar({ user }: NavbarProps) {
 
         {/* Mobile Toggle */}
         <button
-          className="mobile-toggle"
+          className="btn btn-icon mobile-toggle"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle navigation"
-          style={{
-            display: "none",
-            background: "none",
-            border: "1px solid var(--border)",
-            borderRadius: "8px",
-            padding: "8px 10px",
-            cursor: "pointer",
-            color: "var(--foreground)",
-            fontSize: "1.1rem",
-            transition: "all 0.2s ease",
-          }}
+          style={{ display: "none", border: "1px solid var(--border-subtle)", borderRadius: "10px", width: 40, height: 40 }}
         >
           {mobileOpen ? "✕" : "☰"}
         </button>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileOpen && (
+        <div
+          className="animate-fade-in-up"
+          style={{
+            position: "fixed",
+            top: "64px",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(48px) saturate(150%)",
+            WebkitBackdropFilter: "blur(48px) saturate(150%)",
+            zIndex: 40,
+          }}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
       {/* Mobile Menu */}
       {mobileOpen && (
         <div
           className="animate-slide-down"
           style={{
+            position: "absolute",
+            top: "64px",
+            left: 0,
+            right: 0,
+            background: "rgba(10, 10, 15, 0.95)",
+            backdropFilter: "blur(48px) saturate(180%)",
+            WebkitBackdropFilter: "blur(48px) saturate(180%)",
             padding: "8px 24px 20px",
             display: "flex",
             flexDirection: "column",
             gap: "4px",
-            borderTop: "1px solid var(--border-subtle)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+            zIndex: 50,
           }}
         >
           <div style={{ padding: "8px 16px 16px" }}>
@@ -193,17 +236,19 @@ export default function Navbar({ user }: NavbarProps) {
             label="Posts"
             active={activePage === "posts"}
             mobile
+            onClick={(e) => handleNavClick("/", e)}
           />
           <NavLink
             href="/about"
             label="About"
             active={activePage === "about"}
             mobile
+            onClick={(e) => handleNavClick("/about", e)}
           />
           <div
             style={{
               height: "1px",
-              background: "var(--border-subtle)",
+              background: "rgba(255, 255, 255, 0.08)",
               margin: "4px 0",
             }}
           />
@@ -214,6 +259,7 @@ export default function Navbar({ user }: NavbarProps) {
                 label="Register"
                 active={activePage === "register"}
                 mobile
+                onClick={(e) => handleNavClick("/register", e)}
               />
               <NavLink
                 href="/login"
@@ -221,25 +267,15 @@ export default function Navbar({ user }: NavbarProps) {
                 active={activePage === "login"}
                 mobile
                 accent
+                onClick={(e) => handleNavClick("/login", e)}
               />
             </>
           ) : (
             <>
               <button
                 onClick={handleSignOut}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "10px",
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.01em",
-                  transition: "all 0.2s ease",
-                  color: "var(--foreground-muted)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
+                className="btn btn-ghost"
+                style={{ width: "100%", justifyContent: "flex-start", borderRadius: "10px" }}
               >
                 Logout
               </button>
@@ -252,6 +288,7 @@ export default function Navbar({ user }: NavbarProps) {
                 active={activePage === "profile"}
                 mobile
                 accent
+                onClick={(e) => handleNavClick(`/profile/${user.username}`, e)}
               />
             </>
           )}
@@ -266,6 +303,14 @@ export default function Navbar({ user }: NavbarProps) {
           .mobile-toggle {
             display: block !important;
           }
+        }
+        @keyframes loading-progress {
+          0% { width: 0%; left: 0; }
+          50% { width: 70%; left: 0; }
+          100% { width: 30%; left: 100%; }
+        }
+        .loading-bar {
+          animation: loading-progress 1.5s ease-in-out infinite;
         }
       `}</style>
     </nav>
@@ -284,51 +329,29 @@ function getActivePage(
 }
 
 function NavLink({
-  href,
-  label,
-  active,
-  accent,
-  mobile,
+  href, label, active, accent, mobile, onClick,
 }: {
   href: string;
   label: string;
   active: boolean;
   accent?: boolean;
   mobile?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
-  const baseStyle: React.CSSProperties = {
-    padding: mobile ? "10px 16px" : "8px 16px",
-    borderRadius: "10px",
-    fontSize: "0.875rem",
-    fontWeight: active ? 600 : 500,
-    letterSpacing: "0.01em",
-    transition: "all 0.2s ease",
-    display: "block",
-    color: active
-      ? "var(--primary)"
-      : accent
-        ? "var(--primary)"
-        : "var(--foreground-muted)",
-    background: active ? "var(--primary-soft)" : "transparent",
-  };
-
   return (
     <Link
       href={href}
-      style={baseStyle}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.color = "var(--foreground)";
-          e.currentTarget.style.background = "var(--surface-hover)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.color = accent
-            ? "var(--primary)"
-            : "var(--foreground-muted)";
-          e.currentTarget.style.background = "transparent";
-        }
+      onClick={onClick}
+      className={`btn btn-nav${active ? " active" : ""}${mobile ? " mobile-nav-item" : ""}`}
+      style={{
+        color: active
+          ? "var(--primary)"
+          : accent
+          ? "var(--primary)"
+          : undefined,
+        width: mobile ? "100%" : undefined,
+        justifyContent: mobile ? "flex-start" : undefined,
+        borderRadius: mobile ? "10px" : undefined,
       }}
     >
       {label}

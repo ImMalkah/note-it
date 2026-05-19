@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from "next/navigation";
 import { createClient } from "@/app/_lib/supabase/client";
 import LikeButton from "./LikeButton";
 import SaveButton from "./SaveButton";
 import { getMoodById } from "@/app/_utils/moods";
+import { Trash2 } from "lucide-react";
 
 interface NoteCardProps {
     id: number;
-    title: string;
+    mood?: string | null;
     author: string;
     date: string;
     content: string;
@@ -25,7 +26,7 @@ interface NoteCardProps {
 }
 export default function NoteCard({
     id,
-    title,
+    mood,
     author,
     date,
     content,
@@ -40,6 +41,28 @@ export default function NoteCard({
 }: NoteCardProps) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Track mouse position on pointerdown so we can tell a clean click
+    // apart from a click-hold-drag (text selection). If the pointer moved
+    // more than 5px we skip navigation.
+    const pointerOrigin = useRef<{ x: number; y: number } | null>(null);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        pointerOrigin.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (!pointerOrigin.current) return;
+        const dx = Math.abs(e.clientX - pointerOrigin.current.x);
+        const dy = Math.abs(e.clientY - pointerOrigin.current.y);
+        pointerOrigin.current = null;
+        // If user dragged (text selection), bail out
+        if (dx > 5 || dy > 5) return;
+        // Also skip if there is an active text selection
+        const selection = window.getSelection();
+        if (selection && selection.toString().length > 0) return;
+        router.push(`/note/${id}`);
+    };
 
     // Function to parse content and turn @username into links
     const renderContentWithMentions = (text: string) => {
@@ -64,26 +87,23 @@ export default function NoteCard({
     };
     return (
         <div
-            className="gradient-border"
-            onClick={() => router.push(`/note/${id}`)}
+            className={index >= 0 ? "hover-glass-card animate-fade-in-up" : "hover-glass-card"}
+            onPointerDown={handlePointerDown}
+            onClick={handleClick}
             style={{
-                background: "var(--surface)",
-                borderRadius: "16px",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                animationDelay: `${index * 0.05}s`,
+                background: "rgba(255, 255, 255, 0.02)",
+                backdropFilter: "blur(20px) saturate(180%)",
+                WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                boxShadow: "0 15px 35px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+                borderRadius: "24px",
+                transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                animationDelay: index >= 0 ? `${index * 0.05}s` : undefined,
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
                 height: "100%",
-            }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow =
-                    "0 20px 40px rgba(0,0,0,0.3), 0 0 30px var(--primary-soft)";
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
+                userSelect: "text",
             }}
         >
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", flex: 1, position: "relative" }}>
@@ -136,14 +156,14 @@ export default function NoteCard({
                                 e.currentTarget.style.transform = "scale(1)";
                             }
                         }}
-                        aria-label={`Delete note: ${title}`}
+                        aria-label={`Delete note`}
                     >
-                        🗑
+                        <Trash2 size={16} strokeWidth={2} />
                     </button>
                 )}
 
-                {/* Title Row */}
-                {title ? (
+                {/* Mood Row */}
+                {mood ? (
                     <div
                         style={{
                             display: "flex",
@@ -155,8 +175,8 @@ export default function NoteCard({
                         }}
                     >
                         {(() => {
-                            const mood = getMoodById(title);
-                            if (mood) {
+                            const moodObj = getMoodById(mood);
+                            if (moodObj) {
                                 return (
                                     <div
                                         style={{
@@ -165,42 +185,28 @@ export default function NoteCard({
                                             gap: "8px",
                                             padding: "4px 12px",
                                             borderRadius: "20px",
-                                            background: `${mood.color}15`,
-                                            border: `1px solid ${mood.color}30`,
+                                            background: `${moodObj.color}15`,
+                                            border: `1px solid ${moodObj.color}30`,
                                             flex: 1,
                                         }}
                                     >
-                                        <span style={{ fontSize: "1.2rem" }}>{mood.emoji}</span>
+                                        <div style={{ color: moodObj.color, display: "flex" }}>
+                                            <moodObj.icon size={20} strokeWidth={2.5} />
+                                        </div>
                                         <span
                                             style={{
                                                 fontSize: "0.95rem",
                                                 fontWeight: 600,
-                                                color: mood.color,
+                                                color: moodObj.color,
                                                 letterSpacing: "0.02em",
                                             }}
                                         >
-                                            Feeling {mood.label.toLowerCase()}
+                                            Feeling {moodObj.label.toLowerCase()}
                                         </span>
                                     </div>
                                 );
                             }
-
-                            // Fallback for legacy text titles
-                            return (
-                                <h2
-                                    style={{
-                                        fontSize: "1.25rem",
-                                        fontWeight: 700,
-                                        color: "var(--foreground)",
-                                        margin: 0,
-                                        lineHeight: 1.3,
-                                        letterSpacing: "-0.01em",
-                                        flex: 1,
-                                    }}
-                                >
-                                    {title}
-                                </h2>
-                            );
+                            return null;
                         })()}
                     </div>
                 ) : null}
@@ -212,7 +218,7 @@ export default function NoteCard({
                         alignItems: "center",
                         gap: "6px",
                         marginBottom: "4px",
-                        paddingRight: !title && isAuthor ? "40px" : "0",
+                        paddingRight: !mood && isAuthor ? "40px" : "0",
                     }}
                 >
                     {authorAvatarUrl ? (
@@ -264,7 +270,7 @@ export default function NoteCard({
                 <div
                     style={{
                         height: "1px",
-                        background: "linear-gradient(90deg, var(--border), transparent)",
+                        background: "linear-gradient(90deg, rgba(255,255,255,0.1), transparent)",
                         margin: "16px 0",
                     }}
                 />
@@ -294,8 +300,8 @@ export default function NoteCard({
                         alignItems: "center",
                         justifyContent: "space-between",
                         marginTop: "auto",
-                        paddingTop: "12px",
-                        borderTop: "1px solid var(--border-subtle)",
+                        paddingTop: "16px",
+                        borderTop: "1px solid rgba(255, 255, 255, 0.06)",
                     }}
                 >
                     <LikeButton

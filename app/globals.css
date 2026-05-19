@@ -219,3 +219,345 @@ a {
   mask-composite: exclude;
   pointer-events: none;
 }
+
+@keyframes float {
+  0% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate(50px, -80px) scale(1.1) rotate(5deg); }
+  66% { transform: translate(-40px, 40px) scale(0.9) rotate(-5deg); }
+  100% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+}
+
+.hover-glass-card:hover {
+  transform: translateY(-12px) scale(1.03);
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 
+    0 40px 80px rgba(0, 0, 0, 0.4), 
+    0 15px 35px rgba(230, 118, 185, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.hover-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+}
+
+/* ─────────────────────────────────────────────
+   BUTTON SYSTEM
+   ───────────────────────────────────────────── */
+
+/* Base reset for all buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Ripple shimmer on active */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn:hover::after {
+  opacity: 1;
+}
+
+/* PRIMARY — gradient pill (hero action) */
+.btn-primary {
+  padding: 11px 24px;
+  border-radius: 100px;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.3),
+    0 4px 16px rgba(230, 118, 185, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.5),
+    0 8px 28px rgba(230, 118, 185, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.3),
+    0 2px 8px rgba(230, 118, 185, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* GHOST — glass outline */
+.btn-ghost {
+  padding: 9px 20px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--foreground-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--foreground);
+  transform: translateY(-1px);
+}
+.btn-ghost:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* SURFACE — subtle filled (secondary actions) */
+.btn-surface {
+  padding: 9px 20px;
+  border-radius: 100px;
+  background: var(--surface);
+  color: var(--foreground-muted);
+  border: 1px solid var(--border-subtle);
+}
+.btn-surface:hover {
+  background: var(--surface-hover);
+  color: var(--foreground);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* DANGER — unfollow / delete */
+.btn-danger {
+  padding: 9px 20px;
+  border-radius: 100px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+}
+
+/* ICON — circular icon-only button */
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--foreground-muted);
+  border: none;
+  flex-shrink: 0;
+}
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--foreground);
+}
+.btn-icon.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.btn-icon.active:hover {
+  background: rgba(230, 118, 185, 0.22);
+}
+
+/* NAV PILL — navbar links */
+.btn-nav {
+  padding: 7px 16px;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--foreground-muted);
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.btn-nav:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--foreground);
+}
+.btn-nav.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* FOLLOW — profile follow/unfollow */
+.btn-follow {
+  padding: 8px 22px;
+  border-radius: 100px;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  color: #fff;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(230, 118, 185, 0.25);
+}
+.btn-follow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(230, 118, 185, 0.4);
+}
+.btn-following {
+  padding: 8px 22px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--foreground-muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.875rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+.btn-following:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* Size modifiers */
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 7px 16px;
+}
+.btn-lg {
+  font-size: 1rem;
+  padding: 14px 32px;
+  border-radius: 100px;
+}
+
+/* Compose FAB — floating action button (new note) */
+.btn-compose {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 100px;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.35),
+    0 4px 20px rgba(230, 118, 185, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-compose::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.15) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+.btn-compose:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.5),
+    0 8px 32px rgba(230, 118, 185, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn-compose:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Publish button (full-width form submit) */
+.btn-publish {
+  width: 100%;
+  padding: 15px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.3),
+    0 8px 30px rgba(230, 118, 185, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-publish::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.12) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+.btn-publish:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(230, 118, 185, 0.5),
+    0 12px 40px rgba(230, 118, 185, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn-publish:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-publish:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}

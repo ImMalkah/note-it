@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
 import MentionsTextarea from "./MentionsTextarea";
 import { MOODS } from "@/app/_utils/moods";
+import { X, Camera } from "lucide-react";
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -16,8 +18,8 @@ interface EditProfileModalProps {
     currentInstagram?: string | null;
     currentFacebook?: string | null;
     currentSnapchat?: string | null;
-    currentHeaderUrl?: string | null;
 }
+
 export default function EditProfileModal({
     isOpen,
     onClose,
@@ -28,7 +30,6 @@ export default function EditProfileModal({
     currentInstagram,
     currentFacebook,
     currentSnapchat,
-    currentHeaderUrl
 }: EditProfileModalProps) {
     const [bio, setBio] = useState(currentBio || "");
     const [mood, setMood] = useState(currentMood || "");
@@ -37,12 +38,15 @@ export default function EditProfileModal({
     const [snapchat, setSnapchat] = useState(currentSnapchat || "");
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(currentAvatarUrl);
-    const [headerFile, setHeaderFile] = useState<File | null>(null);
-    const [headerPreview, setHeaderPreview] = useState<string | null>(currentHeaderUrl || null);
     const [loading, setLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     const supabase = createClient();
     const router = useRouter();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -55,7 +59,7 @@ export default function EditProfileModal({
         };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -65,19 +69,10 @@ export default function EditProfileModal({
         }
     };
 
-    const handleHeaderFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setHeaderFile(file);
-            setHeaderPreview(URL.createObjectURL(file));
-        }
-    };
-
     const handleSave = async () => {
         setLoading(true);
         try {
             let newAvatarUrl = currentAvatarUrl;
-            let newHeaderUrl = currentHeaderUrl;
 
             // 1. Upload new avatar if selected
             if (avatarFile) {
@@ -98,31 +93,12 @@ export default function EditProfileModal({
                 newAvatarUrl = publicUrlData.publicUrl;
             }
 
-            // 1.5 Upload new header if selected
-            if (headerFile) {
-                const fileExt = headerFile.name.split('.').pop();
-                const fileName = `${userId}/header-${Date.now()}.${fileExt}`;
-
-                const { error: uploadError } = await supabase.storage
-                    .from("avatars") // We can reuse avatars storage for profile assets
-                    .upload(fileName, headerFile, { upsert: true });
-
-                if (uploadError) throw uploadError;
-
-                const { data: publicUrlData } = supabase.storage
-                    .from("avatars")
-                    .getPublicUrl(fileName);
-
-                newHeaderUrl = publicUrlData.publicUrl;
-            }
-
             // 2. Update profiles table
             const { error: updateError } = await supabase
                 .from("profiles")
                 .update({
                     bio: bio,
                     avatar_url: newAvatarUrl,
-                    header_url: newHeaderUrl || null,
                     mood: mood || null,
                     instagram: instagram || null,
                     facebook: facebook || null,
@@ -142,109 +118,69 @@ export default function EditProfileModal({
         }
     };
 
-    return (
-        <div style={{
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)", display: "flex",
-            alignItems: "center", justifyContent: "center", zIndex: 1000,
-            backdropFilter: "blur(4px)"
-        }} onClick={onClose}>
-            <div style={{
-                background: "var(--surface)", borderRadius: "16px",
-                width: "90%", maxWidth: "450px", maxHeight: "90vh", overflowY: "auto",
-                display: "flex", flexDirection: "column",
-                border: "1px solid var(--border-subtle)",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
-            }} onClick={(e) => e.stopPropagation()}>
-                <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h2 style={{ margin: 0, fontSize: "1.25rem", color: "var(--foreground)", fontWeight: 700 }}>Edit Profile</h2>
-                    <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--foreground-muted)", cursor: "pointer", fontSize: "1.5rem", lineHeight: 1, padding: 0 }}>&times;</button>
+    const modalContent = (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xl md:p-5 animate-fade-in" onClick={onClose}>
+            <div 
+                className="relative flex flex-col w-full h-full md:h-auto md:max-h-[90vh] md:max-w-[550px] bg-white/5 backdrop-blur-[32px] saturate-150 border border-white/10 md:rounded-[24px] md:shadow-[0_40px_80px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden animate-slide-down"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex justify-between items-center px-6 py-5 border-b border-white/10 bg-black/10 shrink-0 pt-10 md:pt-5">
+                    <h2 className="gradient-text m-0 text-xl font-extrabold tracking-tight">Edit Profile</h2>
+                    <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 border-none text-[var(--foreground-muted)] cursor-pointer flex items-center justify-center transition-colors">
+                        <X size={20} strokeWidth={2.5} />
+                    </button>
                 </div>
 
-                <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-                    {/* Header Upload */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center", width: "100%" }}>
-                        <label style={{ width: "100%", cursor: "pointer", position: "relative" }}>
-                            <div style={{
-                                width: "100%",
-                                height: "100px",
-                                borderRadius: "12px",
-                                background: headerPreview ? `url(${headerPreview}) center/cover no-repeat` : "linear-gradient(135deg, var(--primary-soft) 0%, var(--gradient-end) 100%)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                border: "2px dashed var(--border-subtle)",
-                                overflow: "hidden"
-                            }}>
-                                <div style={{ background: "rgba(0,0,0,0.5)", padding: "6px 12px", borderRadius: "20px", color: "white", fontSize: "0.8rem", fontWeight: 600 }}>
-                                    Change Background
-                                </div>
-                            </div>
-                            <input type="file" accept="image/*" onChange={handleHeaderFileChange} style={{ display: "none" }} />
-                        </label>
-                    </div>
-
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-8 custom-scrollbar pb-24 md:pb-8">
+                    
                     {/* Avatar Upload */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
-                        <label style={{ cursor: "pointer", position: "relative" }}>
+                    <div className="flex flex-col items-center gap-3">
+                        <label className="cursor-pointer relative block">
                             {avatarPreview ? (
-                                <img src={avatarPreview} alt="Avatar" style={{ width: "80px", height: "80px", borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border-subtle)" }} />
+                                <img src={avatarPreview} alt="Avatar" className="w-[110px] h-[110px] rounded-full object-cover border-4 border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)]" />
                             ) : (
-                                <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "var(--background-secondary)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--border-subtle)" }}>
-                                    <i className="fa-solid fa-camera" style={{ color: "var(--foreground-muted)", fontSize: "1.2rem" }}></i>
+                                <div className="w-[110px] h-[110px] rounded-full bg-white/5 flex items-center justify-center border-2 border-dashed border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
+                                    <Camera size={32} className="text-[var(--foreground-muted)]" strokeWidth={1.5} />
                                 </div>
                             )}
-                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
+                            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                            <div className="absolute bottom-0 right-0 bg-[var(--primary)] rounded-full w-9 h-9 flex items-center justify-center border-2 border-black/50 shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+                                <Camera size={16} color="white" strokeWidth={2.5} />
+                            </div>
                         </label>
-                        <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>Click to change photo</span>
+                        <span className="text-sm text-[var(--foreground-muted)] font-medium">Tap to change photo</span>
                     </div>
 
                     {/* Bio Edit */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--foreground)" }}>Bio</label>
+                    <div className="flex flex-col gap-2.5">
+                        <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Bio</label>
                         <MentionsTextarea
                             value={bio}
                             onChange={(val) => setBio(val)}
                             placeholder="Tell us about yourself..."
-                            rows={4}
+                            rows={3}
                             style={{
-                                width: "100%", padding: "12px", borderRadius: "10px", boxSizing: "border-box",
-                                border: "1px solid var(--border-subtle)", background: "var(--background)",
-                                color: "var(--foreground)", fontSize: "0.95rem", resize: "none"
+                                width: "100%", padding: "14px 16px", borderRadius: "12px", boxSizing: "border-box",
+                                border: "1px solid rgba(255, 255, 255, 0.1)", background: "rgba(0, 0, 0, 0.2)",
+                                color: "var(--foreground)", fontSize: "0.95rem", resize: "none",
+                                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)", outline: "none", transition: "border-color 0.3s ease",
+                                fontFamily: "inherit"
                             }}
                         />
                     </div>
 
                     {/* Mood Edit */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--foreground)" }}>Current Mood</label>
-                        <div
-                            style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "8px",
-                                maxHeight: "150px",
-                                overflowY: "auto",
-                                padding: "4px 0",
-                            }}
-                        >
-                            {/* Option to clear mood */}
+                    <div className="flex flex-col gap-2.5">
+                        <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Current Mood</label>
+                        <div className="flex flex-wrap gap-2.5">
                             <button
                                 type="button"
                                 onClick={() => setMood("")}
-                                style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    padding: "6px 12px",
-                                    borderRadius: "20px",
-                                    background: !mood ? "var(--border-subtle)" : "var(--background)",
-                                    border: `1px solid ${!mood ? "var(--foreground-muted)" : "var(--border-subtle)"}`,
-                                    cursor: "pointer",
-                                    transition: "all 0.2s ease",
-                                }}
+                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all duration-200 border ${!mood ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
                             >
-                                <span style={{ fontSize: "0.85rem", color: "var(--foreground)" }}>No mood</span>
+                                <span className={`text-[0.9rem] font-medium ${!mood ? 'text-white' : 'text-[var(--foreground-muted)]'}`}>No mood</span>
                             </button>
                             {MOODS.map((m) => {
                                 const isSelected = mood === m.id;
@@ -254,27 +190,19 @@ export default function EditProfileModal({
                                         type="button"
                                         onClick={() => setMood(m.id)}
                                         style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: "6px",
-                                            padding: "6px 12px",
-                                            borderRadius: "20px",
-                                            background: isSelected ? `${m.color}15` : "var(--background)",
-                                            border: `1px solid ${isSelected ? m.color : "var(--border-subtle)"}`,
-                                            cursor: "pointer",
-                                            transition: "all 0.2s ease",
-                                            transform: isSelected ? "scale(1.05)" : "scale(1)",
-                                            boxShadow: isSelected ? `0 2px 8px ${m.color}20` : "none",
+                                            background: isSelected ? `${m.color}15` : "",
+                                            borderColor: isSelected ? m.color : "",
+                                            boxShadow: isSelected ? `0 4px 12px ${m.color}20, inset 0 1px 2px rgba(255,255,255,0.1)` : "none",
                                         }}
+                                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all duration-300 border ${isSelected ? 'translate-y-[-1px]' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:-translate-y-[1px]'}`}
                                         title={m.label}
                                     >
-                                        <span style={{ fontSize: "1rem" }}>{m.emoji}</span>
+                                        <div style={{ color: isSelected ? m.color : "var(--foreground-muted)", display: "flex" }}>
+                                            <m.icon size={16} strokeWidth={isSelected ? 2.5 : 2} />
+                                        </div>
                                         <span
-                                            style={{
-                                                fontSize: "0.85rem",
-                                                fontWeight: isSelected ? 600 : 500,
-                                                color: isSelected ? m.color : "var(--foreground)",
-                                            }}
+                                            style={{ color: isSelected ? m.color : "var(--foreground)" }}
+                                            className={`text-[0.9rem] ${isSelected ? 'font-semibold' : 'font-medium'}`}
                                         >
                                             {m.label}
                                         </span>
@@ -285,62 +213,62 @@ export default function EditProfileModal({
                     </div>
 
                     {/* Social Links Edit */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderTop: "1px solid var(--border-subtle)", paddingTop: "16px", marginTop: "4px" }}>
-                        <label style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--foreground)" }}>Social Links</label>
+                    <div className="flex flex-col gap-4 border-t border-white/10 pt-6">
+                        <label className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Social Links</label>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <i className="fa-brands fa-instagram" style={{ color: "#E1306C", fontSize: "1.2rem", width: "24px", textAlign: "center" }}></i>
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-[#E1306C]/15 flex items-center justify-center shrink-0">
+                                <i className="fa-brands fa-instagram text-[#E1306C] text-[1.2rem]"></i>
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Instagram username"
                                 value={instagram}
                                 onChange={(e) => setInstagram(e.target.value)}
-                                style={{
-                                    flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)", color: "var(--foreground)", fontSize: "0.9rem"
-                                }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-black/20 text-[var(--foreground)] text-[0.95rem] outline-none shadow-inner transition-colors focus:border-[#E1306C]/50"
                             />
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <i className="fa-brands fa-facebook" style={{ color: "#1877F2", fontSize: "1.2rem", width: "24px", textAlign: "center" }}></i>
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-[#1877F2]/15 flex items-center justify-center shrink-0">
+                                <i className="fa-brands fa-facebook text-[#1877F2] text-[1.2rem]"></i>
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Facebook username"
                                 value={facebook}
                                 onChange={(e) => setFacebook(e.target.value)}
-                                style={{
-                                    flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)", color: "var(--foreground)", fontSize: "0.9rem"
-                                }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-black/20 text-[var(--foreground)] text-[0.95rem] outline-none shadow-inner transition-colors focus:border-[#1877F2]/50"
                             />
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <i className="fa-brands fa-snapchat" style={{ color: "#FFFC00", fontSize: "1.2rem", width: "24px", textAlign: "center" }}></i>
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-[#FFFC00]/15 flex items-center justify-center shrink-0">
+                                <i className="fa-brands fa-snapchat text-[#FFFC00] text-[1.2rem]"></i>
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Snapchat username"
                                 value={snapchat}
                                 onChange={(e) => setSnapchat(e.target.value)}
-                                style={{
-                                    flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border-subtle)",
-                                    background: "var(--background)", color: "var(--foreground)", fontSize: "0.9rem"
-                                }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-black/20 text-[var(--foreground)] text-[0.95rem] outline-none shadow-inner transition-colors focus:border-[#FFFC00]/50"
                             />
                         </div>
                     </div>
                 </div>
 
-                <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-                    <button onClick={onClose} disabled={loading} style={{ padding: "8px 16px", borderRadius: "8px", background: "transparent", border: "1px solid var(--border-subtle)", color: "var(--foreground)", cursor: "pointer", fontWeight: 600 }}>
+                {/* Footer (Sticky on Mobile) */}
+                <div className="px-6 py-5 border-t border-white/10 flex justify-end gap-3.5 bg-black/30 shrink-0 absolute bottom-0 left-0 right-0 md:relative">
+                    <button onClick={onClose} disabled={loading} className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--foreground)] cursor-pointer font-semibold transition-all duration-200">
                         Cancel
                     </button>
-                    <button onClick={handleSave} disabled={loading} style={{ padding: "8px 16px", borderRadius: "8px", background: "var(--primary)", border: "none", color: "white", cursor: "pointer", fontWeight: 600 }}>
-                        {loading ? "Saving..." : "Save"}
+                    <button onClick={handleSave} disabled={loading} className={`px-7 py-3 rounded-xl bg-gradient-to-br from-[var(--gradient-start)] to-[var(--gradient-end)] border-none text-white cursor-pointer font-bold shadow-[0_6px_20px_var(--primary-soft)] transition-all duration-200 ${loading ? 'scale-[0.98]' : 'hover:scale-[1.02]'}`}>
+                        {loading ? "Saving..." : "Save Changes"}
                     </button>
                 </div>
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 }

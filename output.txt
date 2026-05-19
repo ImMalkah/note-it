@@ -1,0 +1,531 @@
+-- =========================================================
+-- HUMAN-LIKE SOCIAL APP SEED SCRIPT
+-- =========================================================
+-- Designed for:
+--   Supabase + PostgreSQL
+--
+-- Features:
+--   - Human-like personalities
+--   - Modern culture references
+--   - Politics, sports, gaming, history, music, tech
+--   - Emojis
+--   - Occasional typos/slang
+--   - Realistic posting patterns
+--   - Personality-driven moods
+--   - Realistic usernames
+--   - Social graph generation
+--
+-- IMPORTANT:
+--   Assumes your auth trigger auto-creates profiles.
+--
+-- =========================================================
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+DO $$
+DECLARE
+
+    -- =====================================================
+    -- CONFIG
+    -- =====================================================
+
+    total_users            INT := 1200;
+    follow_attempts        INT := 35000;
+    like_attempts          INT := 120000;
+    save_attempts          INT := 50000;
+
+    -- =====================================================
+    -- STORAGE
+    -- =====================================================
+
+    user_ids               UUID[] := '{}';
+    note_ids               BIGINT[] := '{}';
+
+    new_user_id            UUID;
+    generated_note_id      BIGINT;
+
+    -- =====================================================
+    -- LOOP VARS
+    -- =====================================================
+
+    i                      INT;
+    j                      INT;
+
+    -- =====================================================
+    -- RANDOM PICKS
+    -- =====================================================
+
+    random_user_1          UUID;
+    random_user_2          UUID;
+    random_note_id         BIGINT;
+
+    -- =====================================================
+    -- GENERATED CONTENT
+    -- =====================================================
+
+    username_text          TEXT;
+    display_bio            TEXT;
+    avatar_text            TEXT;
+    mood_text              TEXT;
+
+    note_title             TEXT;
+    note_content           TEXT;
+
+    personality_type       TEXT;
+    notes_to_create        INT;
+
+    -- =====================================================
+    -- PERSONALITIES
+    -- =====================================================
+
+    personality_types TEXT[] := ARRAY[
+        'sports_fan',
+        'conspiracy',
+        'music_obsessed',
+        'history_nerd',
+        'gym_bro',
+        'doom_scroller',
+        'political',
+        'anime',
+        'gamer',
+        'tech_bro',
+        'philosophical',
+        'chronically_online',
+        'fashion',
+        'crypto',
+        'movie_buff',
+        'college_student',
+        'shitposter',
+        'quiet_observer'
+    ];
+
+    moods TEXT[] := ARRAY[
+        'happy',
+        'excited',
+        'chill',
+        'creative',
+        'focused',
+        'tired',
+        'sad',
+        'angry',
+        'anxious',
+        'grateful'
+    ];
+
+    first_names TEXT[] := ARRAY[
+        'alex','sam','jay','nina','mike','jordan','david','sarah',
+        'emily','leo','ethan','luna','ava','ryan','tyler','mia',
+        'zack','josh','olivia','noah','liam','emma','sofia'
+    ];
+
+    suffixes TEXT[] := ARRAY[
+        'tv','lol','live','real','daily','archive','central',
+        'wave','vibes','zone','online','core','era','posting'
+    ];
+
+    sports_notes TEXT[] := ARRAY[
+        'bro HOW did they choke that lead 😭',
+        'playoff basketball is genuinely peak entertainment',
+        'refs were absolutely blind tonight',
+        'soccer fans are insane and i respect it',
+        'messi highlights still dont feel real',
+        'why is every sports debate online so toxic now',
+        'that overtime game took years off my life',
+        'i miss when sports felt less corporate tbh'
+    ];
+
+    conspiracy_notes TEXT[] := ARRAY[
+        'theres no way companies arent listening through our phones',
+        'lowkey convinced half the internet is bots now',
+        'history has definitely been rewritten at some point',
+        'sometimes i wonder how much we actually dont know',
+        'the amount of misinformation online is terrifying',
+        'ok but explain why billionaires suddenly all buying bunkers??',
+        'not saying aliens are real BUT...',
+        'every year reality feels more simulated ngl'
+    ];
+
+    music_notes TEXT[] := ARRAY[
+        'music at 2am hits different fr',
+        'old kanye production was actually insane',
+        'why does every sad song become 10x better in the rain',
+        'album rollout culture is so funny 😭',
+        'sometimes one song can save an entire week',
+        'the weeknd after midnight is a spiritual experience',
+        'spotify shuffle is NOT random and i refuse to believe otherwise',
+        'music nostalgia hurts sometimes'
+    ];
+
+    political_notes TEXT[] := ARRAY[
+        'every election cycle feels more insane than the last',
+        'people stopped having normal conversations online',
+        'politics became team sports and thats dangerous',
+        'media outrage cycles are exhausting',
+        'nobody reads articles anymore they just react to headlines',
+        'the internet rewards anger too much',
+        'i genuinely miss when social media felt lighter',
+        'everyone thinks theyre an expert now'
+    ];
+
+    gaming_notes TEXT[] := ARRAY[
+        'ranked matchmaking is emotional warfare',
+        'gaming with friends after work is therapy',
+        'modern gaming optimization is so cooked',
+        'battle passes ruined progression systems',
+        'stayed up till 4am for absolutely no reason again',
+        'why are gamers either insanely wholesome or insane',
+        'voice chat lore could fill entire books',
+        'singleplayer games deserve more love'
+    ];
+
+    history_notes TEXT[] := ARRAY[
+        'ancient civilizations were way smarter than people think',
+        'history repeats itself constantly',
+        'roman empire edits on tiktok are hilarious 😭',
+        'sometimes i read historical events and realize humans never change',
+        'the cold war era feels unreal',
+        'learning history makes modern politics easier to understand',
+        'humanity survived some genuinely insane periods',
+        'old architecture had so much more personality'
+    ];
+
+    random_endings TEXT[] := ARRAY[
+        'idk maybe thats just me',
+        'anyways',
+        'cant stop thinking about it',
+        'lowkey depressing',
+        '😭',
+        'fr tho',
+        'wild times',
+        'what do yall think?',
+        'honestly',
+        'lmao'
+    ];
+
+BEGIN
+
+    RAISE NOTICE '================================';
+    RAISE NOTICE 'GENERATING HUMAN-LIKE DATA';
+    RAISE NOTICE '================================';
+
+    -- =====================================================
+    -- CREATE USERS
+    -- =====================================================
+
+    FOR i IN 1..total_users LOOP
+
+        new_user_id := gen_random_uuid();
+
+        personality_type :=
+            personality_types[
+                FLOOR(RANDOM() * array_length(personality_types,1) + 1)
+            ];
+
+        username_text :=
+            first_names[
+                FLOOR(RANDOM() * array_length(first_names,1) + 1)
+            ] ||
+            '_' ||
+            suffixes[
+                FLOOR(RANDOM() * array_length(suffixes,1) + 1)
+            ] ||
+            FLOOR(RANDOM() * 999)::TEXT;
+
+        mood_text :=
+            moods[
+                FLOOR(RANDOM() * array_length(moods,1) + 1)
+            ];
+
+        avatar_text :=
+            'https://api.dicebear.com/7.x/notionists/svg?seed=' ||
+            username_text;
+
+        display_bio :=
+            CASE personality_type
+
+                WHEN 'sports_fan' THEN
+                    'sports addict • probably watching highlights rn 🏀'
+
+                WHEN 'conspiracy' THEN
+                    'question everything 👁️'
+
+                WHEN 'music_obsessed' THEN
+                    'currently listening to music instead of fixing my life'
+
+                WHEN 'gamer' THEN
+                    'ranked anxiety specialist 🎮'
+
+                WHEN 'history_nerd' THEN
+                    'history repeats itself'
+
+                WHEN 'political' THEN
+                    'trying to stay informed without going insane'
+
+                WHEN 'anime' THEN
+                    'one more episode'
+
+                WHEN 'tech_bro' THEN
+                    'building things on 3 hours of sleep'
+
+                WHEN 'chronically_online' THEN
+                    'unfortunately aware of every internet drama'
+
+                ELSE
+                    'just vibing tbh'
+            END;
+
+        -- AUTH USER
+        INSERT INTO auth.users (
+            instance_id,
+            id,
+            aud,
+            role,
+            email,
+            encrypted_password,
+            email_confirmed_at,
+            raw_app_meta_data,
+            raw_user_meta_data,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            '00000000-0000-0000-0000-000000000000',
+            new_user_id,
+            'authenticated',
+            'authenticated',
+            username_text || '@example.com',
+            crypt('password123', gen_salt('bf')),
+            NOW(),
+            '{"provider":"email","providers":["email"]}'::jsonb,
+            jsonb_build_object(
+                'username',
+                username_text
+            ),
+            NOW() - (RANDOM() * INTERVAL '700 days'),
+            NOW()
+        );
+
+        -- PROFILE UPDATE
+        UPDATE public.profiles
+        SET
+            bio = display_bio,
+            avatar_url = avatar_text,
+            mood = mood_text,
+            instagram = username_text,
+            snapchat = username_text || '_snap'
+        WHERE id = new_user_id;
+
+        user_ids := array_append(user_ids, new_user_id);
+
+        -- =================================================
+        -- CREATE NOTES FOR USER
+        -- =================================================
+
+        notes_to_create := FLOOR(RANDOM() * 18 + 3);
+
+        FOR j IN 1..notes_to_create LOOP
+
+            note_content :=
+
+                CASE personality_type
+
+                    WHEN 'sports_fan' THEN
+                        sports_notes[
+                            FLOOR(RANDOM() * array_length(sports_notes,1) + 1)
+                        ]
+
+                    WHEN 'conspiracy' THEN
+                        conspiracy_notes[
+                            FLOOR(RANDOM() * array_length(conspiracy_notes,1) + 1)
+                        ]
+
+                    WHEN 'music_obsessed' THEN
+                        music_notes[
+                            FLOOR(RANDOM() * array_length(music_notes,1) + 1)
+                        ]
+
+                    WHEN 'political' THEN
+                        political_notes[
+                            FLOOR(RANDOM() * array_length(political_notes,1) + 1)
+                        ]
+
+                    WHEN 'gamer' THEN
+                        gaming_notes[
+                            FLOOR(RANDOM() * array_length(gaming_notes,1) + 1)
+                        ]
+
+                    WHEN 'history_nerd' THEN
+                        history_notes[
+                            FLOOR(RANDOM() * array_length(history_notes,1) + 1)
+                        ]
+
+                    ELSE
+                        'life feels weird lately but we move forward i guess'
+                END
+
+                || ' '
+
+                ||
+
+                random_endings[
+                    FLOOR(RANDOM() * array_length(random_endings,1) + 1)
+                ];
+
+            -- occasional typo simulation
+            IF RANDOM() < 0.08 THEN
+                note_content := REPLACE(note_content, 'the', 'teh');
+            END IF;
+
+            IF RANDOM() < 0.05 THEN
+                note_content := REPLACE(note_content, 'really', 'rly');
+            END IF;
+
+            INSERT INTO public.notes (
+                content,
+                author_id,
+                mood,
+                created_at
+            )
+            VALUES (
+                note_content,
+                new_user_id,
+                mood_text,
+                NOW() - (RANDOM() * INTERVAL '700 days')
+            )
+            RETURNING id INTO generated_note_id;
+
+            note_ids := array_append(note_ids, generated_note_id);
+
+        END LOOP;
+
+        IF i % 100 = 0 THEN
+            RAISE NOTICE 'Generated % users...', i;
+        END IF;
+
+    END LOOP;
+
+    -- =====================================================
+    -- FOLLOWS
+    -- =====================================================
+
+    RAISE NOTICE 'Generating follows...';
+
+    FOR i IN 1..follow_attempts LOOP
+
+        random_user_1 :=
+            user_ids[
+                FLOOR(RANDOM() * array_length(user_ids,1) + 1)
+            ];
+
+        random_user_2 :=
+            user_ids[
+                FLOOR(RANDOM() * array_length(user_ids,1) + 1)
+            ];
+
+        IF random_user_1 <> random_user_2 THEN
+
+            BEGIN
+
+                INSERT INTO public.user_follows (
+                    follower_id,
+                    following_id,
+                    created_at
+                )
+                VALUES (
+                    random_user_1,
+                    random_user_2,
+                    NOW() - (RANDOM() * INTERVAL '700 days')
+                );
+
+            EXCEPTION
+                WHEN unique_violation THEN
+                    NULL;
+            END;
+
+        END IF;
+
+    END LOOP;
+
+    -- =====================================================
+    -- LIKES
+    -- =====================================================
+
+    RAISE NOTICE 'Generating likes...';
+
+    FOR i IN 1..like_attempts LOOP
+
+        random_user_1 :=
+            user_ids[
+                FLOOR(RANDOM() * array_length(user_ids,1) + 1)
+            ];
+
+        random_note_id :=
+            note_ids[
+                FLOOR(RANDOM() * array_length(note_ids,1) + 1)
+            ];
+
+        BEGIN
+
+            INSERT INTO public.note_likes (
+                user_id,
+                note_id,
+                created_at
+            )
+            VALUES (
+                random_user_1,
+                random_note_id,
+                NOW() - (RANDOM() * INTERVAL '700 days')
+            );
+
+        EXCEPTION
+            WHEN unique_violation THEN
+                NULL;
+        END;
+
+    END LOOP;
+
+    -- =====================================================
+    -- SAVED NOTES
+    -- =====================================================
+
+    RAISE NOTICE 'Generating saves...';
+
+    FOR i IN 1..save_attempts LOOP
+
+        random_user_1 :=
+            user_ids[
+                FLOOR(RANDOM() * array_length(user_ids,1) + 1)
+            ];
+
+        random_note_id :=
+            note_ids[
+                FLOOR(RANDOM() * array_length(note_ids,1) + 1)
+            ];
+
+        BEGIN
+
+            INSERT INTO public.saved_notes (
+                user_id,
+                note_id,
+                created_at
+            )
+            VALUES (
+                random_user_1,
+                random_note_id,
+                NOW() - (RANDOM() * INTERVAL '700 days')
+            );
+
+        EXCEPTION
+            WHEN unique_violation THEN
+                NULL;
+        END;
+
+    END LOOP;
+
+    RAISE NOTICE '================================';
+    RAISE NOTICE 'SEED COMPLETE';
+    RAISE NOTICE 'Users: %', array_length(user_ids,1);
+    RAISE NOTICE 'Notes: %', array_length(note_ids,1);
+    RAISE NOTICE '================================';
+
+END $$;

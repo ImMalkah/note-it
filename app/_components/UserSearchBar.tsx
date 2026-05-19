@@ -128,15 +128,19 @@ export default function UserSearchBar() {
                     placeholder="Search users..."
                     style={{
                         width: "100%",
-                        padding: "10px 16px 10px 38px", // Make room for search icon
+                        padding: "10px 16px 10px 38px",
                         borderRadius: "20px",
-                        border: `1px solid ${isFocused ? "var(--primary)" : "var(--border)"}`,
-                        background: isFocused ? "var(--surface)" : "var(--background)",
+                        border: `1px solid ${isFocused ? "var(--primary)" : "rgba(255, 255, 255, 0.1)"}`,
+                        background: isFocused ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.2)",
                         color: "var(--foreground)",
-                        fontSize: "0.9rem",
+                        fontSize: "0.95rem",
                         outline: "none",
-                        transition: "all 0.2s ease",
-                        boxShadow: isFocused ? "0 0 0 2px var(--primary-soft)" : "none",
+                        transition: "all 0.3s ease",
+                        boxShadow: isFocused 
+                            ? "0 0 0 3px var(--primary-soft), inset 0 2px 4px rgba(0,0,0,0.2)" 
+                            : "inset 0 2px 4px rgba(0,0,0,0.2)",
+                        backdropFilter: "blur(12px)",
+                        WebkitBackdropFilter: "blur(12px)",
                     }}
                 />
             </div>
@@ -145,18 +149,21 @@ export default function UserSearchBar() {
             {isFocused && query.trim() !== "" && (
                 <div style={{
                     position: "absolute",
-                    top: "calc(100% + 8px)",
+                    top: "calc(100% + 12px)",
                     left: "0",
-                    background: "var(--surface)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "16px",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
+                    background: "rgba(20, 20, 25, 0.6)",
+                    backdropFilter: "blur(32px) saturate(180%)",
+                    WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    borderRadius: "20px",
+                    boxShadow: "0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
                     zIndex: 100,
                     width: "100%",
                     overflow: "hidden",
-                    animation: "fadeIn 0.2s ease-out",
+                    animation: "slideDown 0.2s ease-out forwards",
+                    padding: "8px",
                 }}>
-                    <div style={{ padding: "10px 16px", fontSize: "0.75rem", fontWeight: 700, color: "var(--foreground-muted)", borderBottom: "1px solid var(--border-subtle)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ padding: "8px 12px", fontSize: "0.75rem", fontWeight: 700, color: "var(--foreground-muted)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
                         Users
                     </div>
 
@@ -176,21 +183,21 @@ export default function UserSearchBar() {
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "12px",
-                                        padding: "12px 16px",
+                                        padding: "10px 12px",
                                         cursor: "pointer",
-                                        background: isSelected ? "var(--background-secondary)" : "transparent",
-                                        transition: "background 0.2s ease",
-                                        borderLeft: isSelected ? "3px solid var(--primary)" : "3px solid transparent",
+                                        background: isSelected ? "rgba(255, 255, 255, 0.08)" : "transparent",
+                                        borderRadius: "12px",
+                                        transition: "all 0.2s ease",
                                     }}
                                 >
                                     {user.avatar_url ? (
-                                        <img src={user.avatar_url} alt={user.username} style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid var(--border-subtle)" }} />
+                                        <img src={user.avatar_url} alt={user.username} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(255, 255, 255, 0.1)" }} />
                                     ) : (
-                                        <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", fontWeight: 700, color: "white", flexShrink: 0 }}>
+                                        <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", fontWeight: 700, color: "white", flexShrink: 0, boxShadow: "0 4px 10px rgba(230, 118, 185, 0.3)" }}>
                                             {user.username.charAt(0).toUpperCase()}
                                         </div>
                                     )}
-                                    <span style={{ color: "var(--foreground)", fontSize: "0.95rem" }}>
+                                    <span style={{ color: isSelected ? "var(--foreground)" : "var(--foreground-muted)", fontSize: "0.95rem", fontWeight: isSelected ? 600 : 500, transition: "color 0.2s ease" }}>
                                         {renderUsernameWithHighlight(user.username, query)}
                                     </span>
                                 </div>

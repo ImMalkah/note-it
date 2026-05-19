@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "./_components/Navbar";
 import { createClient } from "./_lib/supabase/server";
 import { Analytics } from "@vercel/analytics/next";
+import BackgroundBlobs from "./_components/BackgroundBlobs";
 
 
 const inter = Inter({
@@ -53,8 +54,11 @@ export default async function RootLayout({
           fontFamily: "var(--font-inter), 'Inter', system-ui, sans-serif",
         }}
       >
-        <Navbar user={currentUser} />
-        {children}
+        <BackgroundBlobs />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <Navbar user={currentUser} />
+          {children}
+        </div>
         <Analytics />
       </body>
     </html>

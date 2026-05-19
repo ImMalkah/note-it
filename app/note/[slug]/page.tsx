@@ -22,7 +22,7 @@ export default async function NotePage({ params }: PageProps) {
 
     const { data: note, error } = await supabase
         .from("notes")
-        .select("id, title, content, created_at, author_id, profiles!notes_author_id_fkey(username, avatar_url), note_likes(count), saved_notes(count)")
+        .select("id, mood, content, created_at, author_id, profiles!notes_author_id_fkey(username, avatar_url), note_likes(count), saved_notes(count)")
         .eq("id", noteId)
         .single();
 
@@ -70,8 +70,7 @@ export default async function NotePage({ params }: PageProps) {
         <div
             style={{
                 minHeight: "calc(100vh - 64px)",
-                background:
-                    "radial-gradient(ellipse at top, var(--background-secondary) 0%, var(--background) 60%)",
+                background: "transparent",
                 padding: "60px 24px 80px",
             }}
         >
@@ -105,16 +104,20 @@ export default async function NotePage({ params }: PageProps) {
 
                 {/* Note Card */}
                 <div
-                    className="gradient-border"
                     style={{
-                        background: "var(--surface)",
-                        borderRadius: "16px",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        backdropFilter: "blur(32px) saturate(180%)",
+                        WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        boxShadow: "0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+                        borderRadius: "24px",
                         padding: "40px",
+                        position: "relative",
                     }}
                 >
                     {/* Title */}
                     {(() => {
-                        const mood = getMoodById(note.title);
+                        const mood = getMoodById(note.mood);
                         if (mood) {
                             return (
                                 <div
@@ -129,7 +132,9 @@ export default async function NotePage({ params }: PageProps) {
                                         marginBottom: "24px",
                                     }}
                                 >
-                                    <span style={{ fontSize: "1.8rem" }}>{mood.emoji}</span>
+                                    <div style={{ color: mood.color, display: "flex" }}>
+                                        <mood.icon size={28} strokeWidth={2.5} />
+                                    </div>
                                     <span
                                         style={{
                                             fontSize: "1.25rem",
@@ -144,21 +149,7 @@ export default async function NotePage({ params }: PageProps) {
                             );
                         }
 
-                        // Fallback for legacy text titles
-                        return (
-                            <h1
-                                style={{
-                                    fontSize: "2rem",
-                                    fontWeight: 800,
-                                    color: "var(--foreground)",
-                                    margin: "0 0 16px",
-                                    letterSpacing: "-0.02em",
-                                    lineHeight: 1.3,
-                                }}
-                            >
-                                {note.title}
-                            </h1>
-                        );
+                        return null;
                     })()}
 
                     {/* Author and Date */}
@@ -212,8 +203,7 @@ export default async function NotePage({ params }: PageProps) {
                     <div
                         style={{
                             height: "1px",
-                            background:
-                                "linear-gradient(90deg, var(--border), transparent)",
+                            background: "linear-gradient(90deg, rgba(255,255,255,0.1), transparent)",
                             margin: "0 0 24px",
                         }}
                     />
@@ -237,8 +227,8 @@ export default async function NotePage({ params }: PageProps) {
                             alignItems: "center",
                             justifyContent: "space-between",
                             marginTop: "32px",
-                            paddingTop: "16px",
-                            borderTop: "1px solid var(--border-subtle)",
+                            paddingTop: "24px",
+                            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
                         }}
                     >
                         <LikeButton
@@ -259,8 +249,7 @@ export default async function NotePage({ params }: PageProps) {
                             <div
                                 style={{
                                     height: "1px",
-                                    background:
-                                        "linear-gradient(90deg, var(--border), transparent)",
+                                    background: "linear-gradient(90deg, rgba(255,255,255,0.1), transparent)",
                                     margin: "32px 0 24px",
                                 }}
                             />

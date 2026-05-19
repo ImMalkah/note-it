@@ -1,7 +1,21 @@
+import {
+    Sparkles,
+    Smile,
+    Coffee,
+    Zap,
+    Brain,
+    Moon,
+    CloudRain,
+    Flame,
+    Wind,
+    Heart,
+    type LucideIcon
+} from "lucide-react";
+
 export interface Mood {
     id: string;
     label: string;
-    emoji: string;
+    icon: LucideIcon;
     color: string;
     gradient: string;
 }
@@ -10,70 +24,70 @@ export const MOODS: Mood[] = [
     {
         id: "excited",
         label: "Excited",
-        emoji: "🤩",
+        icon: Sparkles,
         color: "#F59E0B", // Amber 500
         gradient: "linear-gradient(135deg, #FCD34D, #F59E0B)",
     },
     {
         id: "happy",
         label: "Happy",
-        emoji: "😊",
+        icon: Smile,
         color: "#10B981", // Emerald 500
         gradient: "linear-gradient(135deg, #6EE7B7, #10B981)",
     },
     {
         id: "chill",
         label: "Chill",
-        emoji: "😌",
+        icon: Coffee,
         color: "#6366f1", // Indigo 500
         gradient: "linear-gradient(135deg, #A5B4FC, #6366f1)",
     },
     {
         id: "creative",
         label: "Creative",
-        emoji: "✨",
+        icon: Zap,
         color: "#8B5CF6", // Violet 500
         gradient: "linear-gradient(135deg, #C4B5FD, #8B5CF6)",
     },
     {
         id: "focused",
         label: "Focused",
-        emoji: "🧠",
+        icon: Brain,
         color: "#3B82F6", // Blue 500
         gradient: "linear-gradient(135deg, #93C5FD, #3B82F6)",
     },
     {
         id: "tired",
         label: "Tired",
-        emoji: "😴",
+        icon: Moon,
         color: "#64748B", // Slate 500
         gradient: "linear-gradient(135deg, #CBD5E1, #64748B)",
     },
     {
         id: "sad",
         label: "Sad",
-        emoji: "😢",
+        icon: CloudRain,
         color: "#0EA5E9", // Sky 500
         gradient: "linear-gradient(135deg, #7DD3FC, #0EA5E9)",
     },
     {
         id: "angry",
         label: "Angry",
-        emoji: "😡",
+        icon: Flame,
         color: "#EF4444", // Red 500
         gradient: "linear-gradient(135deg, #FCA5A5, #EF4444)",
     },
     {
         id: "anxious",
         label: "Anxious",
-        emoji: "😬",
+        icon: Wind,
         color: "#F97316", // Orange 500
         gradient: "linear-gradient(135deg, #FDBA74, #F97316)",
     },
     {
         id: "grateful",
         label: "Grateful",
-        emoji: "🙏",
+        icon: Heart,
         color: "#EC4899", // Pink 500
         gradient: "linear-gradient(135deg, #F9A8D4, #EC4899)",
     }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import NoteCard from "@/app/_components/NoteCard";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 interface Note {
     id: number;
-    title: string;
+    mood: string | null;
     content: string;
     author: string;
     authorAvatarUrl?: string | null;
@@ -17,6 +17,8 @@ interface Note {
 }
 
 interface ProfileTabsProps {
+    profileId?: string;
+    currentUserId?: string;
     username: string;
     notes: Note[];
     savedNotes: Note[];
@@ -28,6 +30,8 @@ interface ProfileTabsProps {
 }
 
 export default function ProfileTabs({
+    profileId,
+    currentUserId,
     username,
     notes,
     savedNotes,
@@ -56,12 +60,139 @@ export default function ProfileTabs({
     // "notes" | "saved" | "liked"
     const [activeTab, setActiveTab] = useState("notes");
 
+    // Pagination states
+    const [pages, setPages] = useState({ notes: 1, saved: 1, liked: 1 });
+    const [hasMore, setHasMore] = useState({ 
+        notes: notes.length >= 20, 
+        saved: savedNotes.length >= 20, 
+        liked: likedNotes.length >= 20 
+    });
+    const [loadingMore, setLoadingMore] = useState(false);
+    const observerTarget = useRef<HTMLDivElement>(null);
+
     // For updating visibility settings
     const [isLikedVisible, setIsLikedVisible] = useState(likedVisible);
     const [loadingSettings, setLoadingSettings] = useState(false);
 
     const supabase = createClient();
     const router = useRouter();
+
+    const fetchMoreNotes = useCallback(async () => {
+        if (loadingMore || !hasMore[activeTab as keyof typeof hasMore] || !profileId) return;
+        setLoadingMore(true);
+
+        const page = pages[activeTab as keyof typeof pages];
+        const from = page * 20;
+        const to = from + 19;
+
+        let query;
+        if (activeTab === "notes") {
+            query = supabase
+                .from("notes")
+                .select("id, mood, content, created_at, note_likes(count), saved_notes(count), profiles!notes_author_id_fkey(username, avatar_url)")
+                .eq("author_id", profileId)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+        } else if (activeTab === "saved") {
+            query = supabase
+                .from("saved_notes")
+                .select(`
+                    note_id,
+                    notes (id, mood, content, created_at, profiles!notes_author_id_fkey(username, avatar_url), note_likes(count), saved_notes(count))
+                `)
+                .eq("user_id", profileId)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+        } else if (activeTab === "liked") {
+            query = supabase
+                .from("note_likes")
+                .select(`
+                    note_id,
+                    notes (id, mood, content, created_at, profiles!notes_author_id_fkey(username, avatar_url), note_likes(count), saved_notes(count))
+                `)
+                .eq("user_id", profileId)
+                .order("created_at", { ascending: false })
+                .range(from, to);
+        }
+
+        if (query) {
+            const { data } = await query;
+            let rawNotes: any[] = [];
+            
+            if (data && data.length > 0) {
+                if (activeTab === "notes") {
+                    rawNotes = data;
+                } else {
+                    rawNotes = data.map((d: any) => d.notes).filter(n => n);
+                }
+
+                if (currentUserId && rawNotes.length > 0) {
+                    const ids = rawNotes.map(n => n.id);
+                    const [likesRes, savesRes] = await Promise.all([
+                        supabase.from("note_likes").select("note_id").eq("user_id", currentUserId).in("note_id", ids),
+                        supabase.from("saved_notes").select("note_id").eq("user_id", currentUserId).in("note_id", ids)
+                    ]);
+                    
+                    if (likesRes.data) likesRes.data.forEach(l => userLikes.add(l.note_id));
+                    if (savesRes.data) savesRes.data.forEach(s => userSaves.add(s.note_id));
+                }
+
+                const formatted = rawNotes.map(n => ({
+                    id: n.id,
+                    mood: n.mood,
+                    content: n.content,
+                    author: n.profiles?.username || "unknown",
+                    authorAvatarUrl: n.profiles?.avatar_url,
+                    date: new Date(n.created_at).toLocaleDateString("en-US", {
+                        year: "numeric", month: "long", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit", hour12: true,
+                    }),
+                    likesCount: n.note_likes?.[0]?.count || 0,
+                    savesCount: n.saved_notes?.[0]?.count || 0,
+                }));
+
+                if (activeTab === "notes") {
+                    setLocalNotes(prev => {
+                        const existingIds = new Set(prev.map(n => n.id));
+                        return [...prev, ...formatted.filter(n => !existingIds.has(n.id))];
+                    });
+                } else if (activeTab === "saved") {
+                    setLocalSaved(prev => {
+                        const existingIds = new Set(prev.map(n => n.id));
+                        return [...prev, ...formatted.filter(n => !existingIds.has(n.id))];
+                    });
+                } else if (activeTab === "liked") {
+                    setLocalLiked(prev => {
+                        const existingIds = new Set(prev.map(n => n.id));
+                        return [...prev, ...formatted.filter(n => !existingIds.has(n.id))];
+                    });
+                }
+
+                setPages(prev => ({ ...prev, [activeTab]: prev[activeTab as keyof typeof prev] + 1 }));
+                if (data.length < 20) {
+                    setHasMore(prev => ({ ...prev, [activeTab]: false }));
+                }
+            } else {
+                setHasMore(prev => ({ ...prev, [activeTab]: false }));
+            }
+        }
+        
+        setLoadingMore(false);
+    }, [activeTab, loadingMore, hasMore, pages, profileId, currentUserId, supabase, userLikes, userSaves]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                fetchMoreNotes();
+            }
+        }, { threshold: 0.1 });
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [fetchMoreNotes]);
 
     const handleToggleSetting = async (field: "saved_notes_visible" | "liked_notes_visible", currentValue: boolean) => {
         setLoadingSettings(true);
@@ -102,7 +233,7 @@ export default function ProfileTabs({
                     <NoteCard
                         key={note.id}
                         id={note.id}
-                        title={note.title}
+                        mood={note.mood}
                         author={note.author}
                         date={note.date}
                         content={note.content}
@@ -189,6 +320,32 @@ export default function ProfileTabs({
             {activeTab === "notes" && renderNotes(localNotes, `${username} hasn't written any notes yet.`)}
             {activeTab === "saved" && renderNotes(localSaved, isOwnProfile ? "You haven't saved any notes yet." : `${username} hasn't saved any notes.`)}
             {activeTab === "liked" && renderNotes(localLiked, isOwnProfile ? "You haven't liked any notes yet." : `${username} hasn't liked any notes.`)}
+            
+            {/* Infinite Scroll Trigger */}
+            <div 
+                ref={observerTarget} 
+                style={{ 
+                    height: "40px", 
+                    display: "flex", 
+                    justifyContent: "center", 
+                    alignItems: "center",
+                    marginTop: "20px"
+                }}
+            >
+                {loadingMore && (
+                    <div style={{ color: "var(--primary)", fontSize: "0.9rem" }}>
+                        Loading more notes...
+                    </div>
+                )}
+                {!hasMore[activeTab as keyof typeof hasMore] && 
+                 ((activeTab === "notes" && localNotes.length > 0) || 
+                  (activeTab === "saved" && localSaved.length > 0) || 
+                  (activeTab === "liked" && localLiked.length > 0)) && (
+                    <div style={{ color: "var(--foreground-muted)", fontSize: "0.9rem" }}>
+                        You've reached the end!
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

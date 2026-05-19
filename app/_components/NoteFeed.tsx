@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createClient } from "@/app/_lib/supabase/client";
 import NoteCard from "./NoteCard";
 import Link from "next/link";
 
 export interface FormattedNote {
     id: number;
-    title: string;
+    mood: string | null;
     content: string;
     author: string;
     authorId: string;
@@ -26,7 +26,105 @@ interface NoteFeedProps {
 
 export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
     const [notes, setNotes] = useState<FormattedNote[]>(initialNotes);
+    // Only tracks the IDs of the *latest* batch — replaced, never accumulated.
+    // This keeps the stagger delay bounded to the batch size (max ~1s).
+    const [currentBatchIds, setCurrentBatchIds] = useState<Set<number>>(new Set());
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(initialNotes.length >= 20);
+    const [loadingMore, setLoadingMore] = useState(false);
+    
     const supabase = createClient();
+    const observerTarget = useRef<HTMLDivElement>(null);
+
+    const fetchMoreNotes = useCallback(async () => {
+        if (loadingMore || !hasMore) return;
+        setLoadingMore(true);
+
+        const from = page * 20;
+        const to = from + 19;
+
+        const { data: newNotes } = await supabase
+            .from("notes")
+            .select(`
+                id, mood, content, created_at, author_id,
+                profiles!notes_author_id_fkey(username, avatar_url),
+                note_likes(count),
+                saved_notes(count)
+            `)
+            .order("created_at", { ascending: false })
+            .range(from, to);
+
+        if (newNotes && newNotes.length > 0) {
+            let userLikes = new Set<number>();
+            let userSaves = new Set<number>();
+
+            if (userId) {
+                const noteIds = newNotes.map(n => n.id);
+                const [likesRes, savesRes] = await Promise.all([
+                    supabase.from("note_likes").select("note_id").eq("user_id", userId).in("note_id", noteIds),
+                    supabase.from("saved_notes").select("note_id").eq("user_id", userId).in("note_id", noteIds)
+                ]);
+
+                if (likesRes.data) likesRes.data.forEach(l => userLikes.add(l.note_id));
+                if (savesRes.data) savesRes.data.forEach(s => userSaves.add(s.note_id));
+            }
+
+            const formatted = newNotes.map((note) => {
+                const profile = note.profiles as unknown as { username: string, avatar_url: string | null } | null;
+                return {
+                    id: note.id as number,
+                    mood: note.mood as string | null,
+                    content: note.content as string,
+                    author: profile?.username || "unknown",
+                    authorId: note.author_id as string,
+                    authorAvatarUrl: profile?.avatar_url || null,
+                    date: new Date(note.created_at as string).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                    }),
+                    likesCount: (note.note_likes as any)?.[0]?.count || 0,
+                    savesCount: (note.saved_notes as any)?.[0]?.count || 0,
+                    isLiked: userLikes.has(note.id as number),
+                    isSaved: userSaves.has(note.id as number),
+                };
+            });
+
+            setNotes(prev => {
+                const existingIds = new Set(prev.map(n => n.id));
+                const uniqueNewNotes = formatted.filter(n => !existingIds.has(n.id));
+                // Replace (not accumulate) — stagger index stays 0-based per batch
+                setCurrentBatchIds(new Set(uniqueNewNotes.map(n => n.id)));
+                return [...prev, ...uniqueNewNotes];
+            });
+            setPage(p => p + 1);
+            if (newNotes.length < 20) setHasMore(false);
+        } else {
+            setHasMore(false);
+        }
+
+        setLoadingMore(false);
+    }, [page, hasMore, loadingMore, supabase, userId]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting) {
+                    fetchMoreNotes();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [fetchMoreNotes]);
 
     useEffect(() => {
         const channel = supabase
@@ -41,7 +139,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
                     const { data: note } = await supabase
                         .from("notes")
                         .select(
-                            `id, title, content, created_at, author_id,
+                            `id, mood, content, created_at, author_id,
                profiles!notes_author_id_fkey(username, avatar_url),
                note_likes(count)`
                         )
@@ -78,7 +176,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
 
                     const formatted: FormattedNote = {
                         id: note.id,
-                        title: note.title,
+                        mood: note.mood,
                         content: note.content,
                         author: profile?.username || "unknown",
                         authorId: note.author_id,
@@ -157,32 +255,62 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
     }
 
     return (
-        <div
-            style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-                alignItems: "start",
-                gap: "20px",
-            }}
-        >
-            {notes.map((note, index) => (
-                <NoteCard
-                    key={note.id}
-                    id={note.id}
-                    title={note.title}
-                    author={note.author}
-                    date={note.date}
-                    content={note.content}
-                    index={index}
-                    initialLikesCount={note.likesCount}
-                    initialSavesCount={note.savesCount}
-                    initialIsLiked={note.isLiked}
-                    initialIsSaved={note.isSaved}
-                    authorAvatarUrl={note.authorAvatarUrl}
-                    isAuthor={userId === note.authorId}
-                    onDeleteAction={(deletedId) => setNotes((prev) => prev.filter((n) => n.id !== deletedId))}
-                />
-            ))}
+        <div>
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+                    alignItems: "start",
+                    gap: "20px",
+                    marginBottom: "40px"
+                }}
+            >
+                {notes.map((note) => {
+                    const batchArr = Array.from(currentBatchIds);
+                    const batchIndex = batchArr.indexOf(note.id);
+                    const isNew = batchIndex !== -1;
+                    return (
+                        <NoteCard
+                            key={note.id}
+                            id={note.id}
+                            mood={note.mood}
+                            author={note.author}
+                            date={note.date}
+                            content={note.content}
+                            index={isNew ? batchIndex : -1}
+                            initialLikesCount={note.likesCount}
+                            initialSavesCount={note.savesCount}
+                            initialIsLiked={note.isLiked}
+                            initialIsSaved={note.isSaved}
+                            authorAvatarUrl={note.authorAvatarUrl}
+                            isAuthor={userId === note.authorId}
+                            onDeleteAction={(deletedId) => setNotes((prev) => prev.filter((n) => n.id !== deletedId))}
+                        />
+                    );
+                })}
+            </div>
+            
+            {/* Infinite Scroll Trigger */}
+            <div 
+                ref={observerTarget} 
+                style={{ 
+                    height: "40px", 
+                    display: "flex", 
+                    justifyContent: "center", 
+                    alignItems: "center" 
+                }}
+            >
+                {loadingMore && (
+                    <div style={{ color: "var(--primary)", fontSize: "0.9rem" }}>
+                        Loading more notes...
+                    </div>
+                )}
+                {!hasMore && notes.length > 0 && (
+                    <div style={{ color: "var(--foreground-muted)", fontSize: "0.9rem" }}>
+                        You've reached the end!
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

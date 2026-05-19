@@ -63,13 +63,14 @@ export default async function ProfilePage({ params }: PageProps) {
     // Fetch their notes
     const { data: notes } = await supabase
         .from("notes")
-        .select("id, title, content, created_at, note_likes(count), saved_notes(count)")
+        .select("id, mood, content, created_at, note_likes(count), saved_notes(count)")
         .eq("author_id", profile.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 19);
 
     const formattedNotes = (notes || []).map((note) => ({
         id: note.id as number,
-        title: note.title as string,
+        mood: note.mood as string | null,
         content: note.content as string,
         author: profile.username as string,
         date: new Date(note.created_at as string).toLocaleDateString("en-US", {
@@ -91,10 +92,11 @@ export default async function ProfilePage({ params }: PageProps) {
             .from("saved_notes")
             .select(`
                 note_id,
-                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count), saved_notes(count))
+                notes (id, mood, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count), saved_notes(count))
             `)
             .eq("user_id", profile.id)
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false })
+            .range(0, 19);
 
         savedNotes = (saves || [])
             .filter(s => s.notes) // ensure note still exists
@@ -102,7 +104,7 @@ export default async function ProfilePage({ params }: PageProps) {
                 const n = s.notes as any;
                 return {
                     id: n.id,
-                    title: n.title,
+                    mood: n.mood,
                     content: n.content,
                     author: n.profiles?.username || "unknown",
                     date: new Date(n.created_at).toLocaleDateString("en-US", {
@@ -122,10 +124,11 @@ export default async function ProfilePage({ params }: PageProps) {
             .from("note_likes")
             .select(`
                 note_id,
-                notes (id, title, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count), saved_notes(count))
+                notes (id, mood, content, created_at, profiles!notes_author_id_fkey(username), note_likes(count), saved_notes(count))
             `)
             .eq("user_id", profile.id)
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false })
+            .range(0, 19);
 
         likedNotes = (likes || [])
             .filter(l => l.notes)
@@ -133,7 +136,7 @@ export default async function ProfilePage({ params }: PageProps) {
                 const n = l.notes as any;
                 return {
                     id: n.id,
-                    title: n.title,
+                    mood: n.mood,
                     content: n.content,
                     author: n.profiles?.username || "unknown",
                     date: new Date(n.created_at).toLocaleDateString("en-US", {
@@ -181,8 +184,7 @@ export default async function ProfilePage({ params }: PageProps) {
         <div
             style={{
                 minHeight: "calc(100vh - 64px)",
-                background:
-                    "radial-gradient(ellipse at top, var(--background-secondary) 0%, var(--background) 60%)",
+                background: "transparent",
                 padding: "40px 24px 80px",
             }}
         >
@@ -196,222 +198,168 @@ export default async function ProfilePage({ params }: PageProps) {
                 {/* Back link */}
                 <Link
                     href="/"
-                    style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "8px 16px",
-                        borderRadius: "10px",
-                        fontSize: "0.85rem",
-                        fontWeight: 500,
-                        color: "var(--foreground-muted)",
-                        background: "var(--surface)",
-                        border: "1px solid var(--border-subtle)",
-                        textDecoration: "none",
-                        transition: "all 0.2s ease",
-                        marginBottom: "32px",
-                    }}
+                    className="btn btn-ghost btn-sm"
+                    style={{ marginBottom: "32px" }}
                 >
                     ← Back
                 </Link>
 
-                {/* Profile Header */}
-                <div
-                    className="gradient-border"
-                    style={{
-                        backgroundImage: profile.header_url
-                            ? `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.75)), url(${profile.header_url})`
-                            : "none",
-                        backgroundColor: profile.header_url ? "transparent" : "var(--surface)",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        borderRadius: "16px",
-                        marginBottom: "36px",
-                        position: "relative",
-                        overflow: "hidden", // Important so the banner doesn't spill out
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                    }}
-                >
-                    {/* Clickable Overlay for Background Expansion (Absolute positioned to cover the whole card behind content) */}
-                    {profile.header_url && (
-                        <ExpandableBackground headerUrl={profile.header_url} />
-                    )}
-
-                    {/* Decorative Top Banner (Only if no custom header) */}
-                    {!profile.header_url && (
-                        <div
-                            style={{
-                                height: "140px",
-                                width: "100%",
-                                background: "linear-gradient(135deg, var(--primary-soft) 0%, var(--gradient-end) 100%)",
-                                opacity: 0.8,
-                            }}
-                        />
-                    )}
-
-                    {/* Spacer when custom header is used to push content down appropriately */}
-                    {profile.header_url && (
-                        <div style={{ height: "140px", width: "100%", zIndex: 2, pointerEvents: "none" }} />
-                    )}
-
-                    {/* Action Button (Top Right Absolute) */}
-                    <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 10 }}>
-                        {isOwnProfile ? (
-                            <EditProfileButton
-                                currentBio={profile.bio}
-                                currentAvatarUrl={profile.avatar_url}
-                                userId={profile.id}
-                                currentMood={profile.mood}
-                                currentInstagram={profile.instagram}
-                                currentFacebook={profile.facebook}
-                                currentSnapchat={profile.snapchat}
-                                currentHeaderUrl={profile.header_url}
-                            />
-                        ) : user && (
-                            <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
-                        )}
-                    </div>
-
-                    {/* Unified Profile Content Container over Background */}
+                {/* Profile Widget */}
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    width: "100%",
+                    marginBottom: "36px",
+                    position: "relative",
+                }}>
                     <div style={{
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         width: "100%",
-                        padding: "0 32px 32px",
+                        maxWidth: "600px",
+                        background: "rgba(255, 255, 255, 0.03)",
+                        backdropFilter: "blur(32px) saturate(180%)",
+                        WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                        padding: "32px 24px",
+                        borderRadius: "24px",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        boxShadow: "0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
                         position: "relative",
-                        zIndex: 2,
-                        pointerEvents: "none", // Let clicks pass through the transparent parts
                     }}>
-                        {/* Soft Translucent Wrapper around text/avatar */}
+                        {/* Action Button (Top Right Absolute) */}
+                        <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 10 }}>
+                            {isOwnProfile ? (
+                                <EditProfileButton
+                                    currentBio={profile.bio}
+                                    currentAvatarUrl={profile.avatar_url}
+                                    userId={profile.id}
+                                    currentMood={profile.mood}
+                                    currentInstagram={profile.instagram}
+                                    currentFacebook={profile.facebook}
+                                    currentSnapchat={profile.snapchat}
+
+                                />
+                            ) : user && (
+                                <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
+                            )}
+                        </div>
+
+                        {/* Avatar */}
                         <div style={{
-                            marginTop: "-60px", // Pull it up to overlap the top banner slightly
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            width: "100%",
-                            maxWidth: "600px",
-                            background: "rgba(0, 0, 0, 0.25)", // Very gentle dark tint
-                            backdropFilter: "blur(2px)", // Extremely soft blur
-                            WebkitBackdropFilter: "blur(2px)",
-                            padding: "32px 24px",
-                            borderRadius: "24px", // Round edges cleanly
-                            border: "1px solid rgba(255, 255, 255, 0.05)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
-                            pointerEvents: "auto", // Re-enable clicks for the actual content
+                            marginBottom: "16px",
+                            borderRadius: "50%",
                         }}>
-                            {/* Avatar (Nested inside the soft container completely) */}
-                            <div style={{
-                                marginBottom: "16px",
-                                borderRadius: "50%",
-                            }}>
-                                {profile.avatar_url ? (
-                                    <ExpandableAvatar
-                                        avatarUrl={profile.avatar_url}
-                                        username={profile.username}
-                                        size={112}
-                                    />
-                                ) : (
+                            {profile.avatar_url ? (
+                                <ExpandableAvatar
+                                    avatarUrl={profile.avatar_url}
+                                    username={profile.username}
+                                    size={112}
+                                />
+                            ) : (
+                                <div
+                                    style={{
+                                        width: "112px",
+                                        height: "112px",
+                                        borderRadius: "50%",
+                                        background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "2.5rem",
+                                        fontWeight: 800,
+                                        color: "white",
+                                    }}
+                                >
+                                    {(profile.username as string).charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+                        <h1
+                            className="gradient-text"
+                            style={{
+                                fontSize: "1.75rem",
+                                fontWeight: 800,
+                                margin: 0,
+                                letterSpacing: "-0.02em",
+                                textAlign: "center"
+                            }}
+                        >
+                            {profile.username}
+                        </h1>
+                        <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", margin: "4px 0 0", textAlign: "center" }}>
+                            Member since {memberSince}
+                        </p>
+
+                        <ProfileFollowCounts
+                            profileId={profile.id}
+                            followersCount={followersCount}
+                            followingCount={followingCount}
+                        />
+
+                        {/* Render User Mood if set */}
+                        {profile.mood && (() => {
+                            const mood = getMoodById(profile.mood);
+                            if (!mood) return null;
+                            return (
+                                <div style={{ marginTop: "16px", display: "flex", justifyContent: "center" }}>
                                     <div
                                         style={{
-                                            width: "112px",
-                                            height: "112px",
-                                            borderRadius: "50%",
-                                            background: "linear-gradient(135deg, var(--gradient-start), var(--gradient-end))",
-                                            display: "flex",
+                                            display: "inline-flex",
                                             alignItems: "center",
-                                            justifyContent: "center",
-                                            fontSize: "2.5rem",
-                                            fontWeight: 800,
-                                            color: "white",
+                                            gap: "8px",
+                                            padding: "6px 16px",
+                                            borderRadius: "20px",
+                                            background: `${mood.color}15`,
+                                            border: `1px solid ${mood.color}30`,
+                                            whiteSpace: "nowrap",
                                         }}
                                     >
-                                        {(profile.username as string).charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                            </div>
-                            <h1
-                                className="gradient-text"
-                                style={{
-                                    fontSize: "1.75rem",
-                                    fontWeight: 800,
-                                    margin: 0,
-                                    letterSpacing: "-0.02em",
-                                    textAlign: "center"
-                                }}
-                            >
-                                {profile.username}
-                            </h1>
-                            <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", margin: "4px 0 0", textAlign: "center" }}>
-                                Member since {memberSince}
-                            </p>
-
-                            <ProfileFollowCounts
-                                profileId={profile.id}
-                                followersCount={followersCount}
-                                followingCount={followingCount}
-                            />
-
-                            {/* Render User Mood if set */}
-                            {profile.mood && (() => {
-                                const mood = getMoodById(profile.mood);
-                                if (!mood) return null;
-                                return (
-                                    <div style={{ marginTop: "16px", display: "flex", justifyContent: "center" }}>
-                                        <div
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                                padding: "6px 16px",
-                                                borderRadius: "20px",
-                                                background: `${mood.color}15`,
-                                                border: `1px solid ${mood.color}30`,
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            <span style={{ fontSize: "1.1rem" }}>{mood.emoji}</span>
-                                            <span style={{ fontSize: "0.95rem", fontWeight: 600, color: mood.color }}>
-                                                Feeling {mood.label.toLowerCase()}
-                                            </span>
+                                        <div style={{ color: mood.color, display: "flex" }}>
+                                            <mood.icon size={18} strokeWidth={2.5} />
                                         </div>
+                                        <span style={{ fontSize: "0.95rem", fontWeight: 600, color: mood.color }}>
+                                            Feeling {mood.label.toLowerCase()}
+                                        </span>
                                     </div>
-                                );
-                            })()}
+                                </div>
+                            );
+                        })()}
 
-                            {/* Bio */}
-                            {profile.bio && (
-                                <p style={{ fontSize: "0.95rem", color: "var(--foreground)", marginTop: "20px", lineHeight: 1.6, textAlign: "center", whiteSpace: "pre-wrap" }}>
-                                    {profile.bio}
-                                </p>
-                            )}
+                        {/* Bio */}
+                        {profile.bio && (
+                            <p style={{ fontSize: "0.95rem", color: "var(--foreground)", marginTop: "20px", lineHeight: 1.6, textAlign: "center", whiteSpace: "pre-wrap" }}>
+                                {profile.bio}
+                            </p>
+                        )}
 
-                            {/* Render Social Links */}
-                            <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "24px" }}>
-                                <SocialWidgets
-                                    instagram={profile.instagram}
-                                    facebook={profile.facebook}
-                                    snapchat={profile.snapchat}
-                                />
-                            </div>
+                        {/* Render Social Links */}
+                        <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "24px" }}>
+                            <SocialWidgets
+                                instagram={profile.instagram}
+                                facebook={profile.facebook}
+                                snapchat={profile.snapchat}
+                            />
                         </div>
                     </div>
                 </div>
-
-                {/* Tabs Component to toggle between Notes, Saved, Liked */}
-                <ProfileTabs
-                    username={profile.username}
-                    notes={formattedNotes}
-                    savedNotes={savedNotes}
-                    likedNotes={likedNotes}
-                    isOwnProfile={isOwnProfile}
-                    likedVisible={profile.liked_notes_visible}
-                    userLikes={userLikes}
-                    userSaves={userSaves}
-                />
             </div>
+
+            {/* Tabs Component to toggle between Notes, Saved, Liked */}
+            <ProfileTabs
+                profileId={profile.id}
+                currentUserId={user?.id}
+                username={profile.username}
+                notes={formattedNotes}
+                savedNotes={savedNotes}
+                likedNotes={likedNotes}
+                isOwnProfile={isOwnProfile}
+                likedVisible={profile.liked_notes_visible}
+                userLikes={userLikes}
+                userSaves={userSaves}
+            />
         </div>
+
     );
 }

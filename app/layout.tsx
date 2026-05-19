@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "./_components/Navbar";
 import { createClient } from "./_lib/supabase/server";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import BackgroundBlobs from "./_components/BackgroundBlobs";
 
 
@@ -60,7 +61,9 @@ export default async function RootLayout({
           {children}
         </div>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
 }
+

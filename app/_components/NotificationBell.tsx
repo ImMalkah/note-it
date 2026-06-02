@@ -80,7 +80,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
             .on(
                 'broadcast',
                 { event: 'new_notification' },
-                async (payload) => {
+                async (payload: any) => {
                     // Refresh the full list to get enriched actor/note data
                     await fetchNotifications();
 

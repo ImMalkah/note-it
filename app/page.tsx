@@ -6,11 +6,9 @@ import { createClient } from "./_lib/supabase/server";
 export default async function Home() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const [notesRes, countRes] = await Promise.all([
+  // Parallelize getting user session, notes feed, and total notes count
+  const [userRes, notesRes, countRes] = await Promise.all([
+    supabase.auth.getUser(),
     supabase
       .from("notes")
       .select(`
@@ -30,19 +28,16 @@ export default async function Home() {
       .select("id", { count: 'exact', head: true })
   ]);
 
+  const user = userRes.data?.user;
   const notes = notesRes.data;
   const error = notesRes.error;
   const totalNotesCount = countRes.count || 0;
-
-  // If user is logged in, only fetch notes from followed users
-  // (Assuming home page is a feed. If no follows exist, it will be empty)
-  // For now, let's just show all notes, but pass down like/save status
 
   // If logged in, fetch the user's specific likes and saves to pass to the client components
   let userLikes = new Set<number>();
   let userSaves = new Set<number>();
 
-  if (user && notes) {
+  if (user && notes && notes.length > 0) {
     const noteIds = notes.map(n => n.id);
 
     const [likesRes, savesRes] = await Promise.all([

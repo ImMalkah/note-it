@@ -61,8 +61,8 @@ export default function NewNotePage() {
 
             if (profiles && profiles.length > 0) {
                 const notificationsToInsert = profiles
-                    .filter(p => p.id !== user.id) // Don't notify self
-                    .map(p => ({
+                    .filter((p: any) => p.id !== user.id) // Don't notify self
+                    .map((p: any) => ({
                         user_id: p.id,
                         actor_id: user.id,
                         note_id: noteData.id,

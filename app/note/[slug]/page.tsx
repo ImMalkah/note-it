@@ -235,11 +235,13 @@ export default async function NotePage({ params }: PageProps) {
                             noteId={noteId}
                             initialLikesCount={likesCount}
                             initialIsLiked={isLiked}
+                            enableRealtime={true}
                         />
                         <SaveButton
                             noteId={noteId}
                             initialIsSaved={isSaved}
                             initialSavesCount={savesCount}
+                            enableRealtime={true}
                         />
                     </div>
 

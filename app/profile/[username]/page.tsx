@@ -242,7 +242,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
                                 />
                             ) : user && (
-                                <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} />
+                                <FollowButton targetUserId={profile.id} initialIsFollowing={isFollowing} isFollower={isFollower} enableRealtime={true} />
                             )}
                         </div>
 

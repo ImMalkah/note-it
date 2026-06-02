@@ -9,9 +9,10 @@ interface SaveButtonProps {
     noteId: number;
     initialIsSaved: boolean;
     initialSavesCount: number;
+    enableRealtime?: boolean;
 }
 
-export default function SaveButton({ noteId, initialIsSaved, initialSavesCount }: SaveButtonProps) {
+export default function SaveButton({ noteId, initialIsSaved, initialSavesCount, enableRealtime = false }: SaveButtonProps) {
     const [isSaved, setIsSaved] = useState(initialIsSaved);
     const [savesCount, setSavesCount] = useState(initialSavesCount);
     const [loading, setLoading] = useState(false);
@@ -26,6 +27,7 @@ export default function SaveButton({ noteId, initialIsSaved, initialSavesCount }
 
     // Handle Realtime Subscription
     useEffect(() => {
+        if (!enableRealtime) return;
 
         const channel = supabase
             .channel(`saved_notes_${noteId}`)
@@ -46,7 +48,7 @@ export default function SaveButton({ noteId, initialIsSaved, initialSavesCount }
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [noteId, supabase]);
+    }, [noteId, supabase, enableRealtime]);
 
     const handleSave = async (e: React.MouseEvent) => {
         e.preventDefault();

@@ -200,25 +200,16 @@ a {
 
 /* Gradient border card */
 .gradient-border {
-  position: relative;
+  border: 1px solid transparent;
+  background-image: 
+    linear-gradient(var(--surface), var(--surface)), 
+    linear-gradient(135deg, var(--border), transparent 50%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
   border-radius: 16px;
-  overflow: hidden;
 }
 
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--border), transparent 50%);
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
+
 
 @keyframes float {
   0% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
@@ -560,4 +551,15 @@ a {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
+=======
+/* Note card base and hover transitions (fully GPU accelerated) */
+.note-card {
+  will-change: transform, box-shadow;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px var(--primary-soft);
+>>>>>>> 7c966ac (performance: optimize website loading speed, FPS, and WebSocket connections)
 }

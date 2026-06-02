@@ -132,7 +132,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
             .on(
                 "postgres_changes",
                 { event: "INSERT", schema: "public", table: "notes" },
-                async (payload) => {
+                async (payload: any) => {
                     const newId = payload.new.id as number;
 
                     // Fetch the full note with profile and like count
@@ -202,7 +202,7 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
             .on(
                 "postgres_changes",
                 { event: "DELETE", schema: "public", table: "notes" },
-                (payload) => {
+                (payload: any) => {
                     const deletedId = payload.old.id as number;
                     setNotes((prev) => prev.filter((n) => n.id !== deletedId));
                 }

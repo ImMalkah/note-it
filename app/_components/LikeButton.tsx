@@ -10,9 +10,10 @@ interface LikeButtonProps {
     noteId: number;
     initialLikesCount: number;
     initialIsLiked: boolean;
+    enableRealtime?: boolean;
 }
 
-export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }: LikeButtonProps) {
+export default function LikeButton({ noteId, initialLikesCount, initialIsLiked, enableRealtime = false }: LikeButtonProps) {
     const [isLiked, setIsLiked] = useState(initialIsLiked);
     const [likesCount, setLikesCount] = useState(initialLikesCount);
     const [loading, setLoading] = useState(false);
@@ -27,6 +28,7 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
 
     // Handle Realtime Subscription
     useEffect(() => {
+        if (!enableRealtime) return;
 
         const channel = supabase
             .channel(`note_likes_${noteId}`)
@@ -35,7 +37,7 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
                 {
                     event: 'interaction_update',
                 },
-                (payload) => {
+                (payload: any) => {
                     const { newCount } = payload.payload;
                     if (typeof newCount === 'number') {
                         setLikesCount(newCount);
@@ -47,7 +49,7 @@ export default function LikeButton({ noteId, initialLikesCount, initialIsLiked }
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [noteId, supabase]);
+    }, [noteId, supabase, enableRealtime]);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.preventDefault();

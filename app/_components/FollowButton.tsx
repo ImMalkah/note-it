@@ -9,9 +9,10 @@ interface FollowButtonProps {
     targetUserId: string;
     initialIsFollowing: boolean;
     isFollower?: boolean;
+    enableRealtime?: boolean;
 }
 
-export default function FollowButton({ targetUserId, initialIsFollowing, isFollower = false }: FollowButtonProps) {
+export default function FollowButton({ targetUserId, initialIsFollowing, isFollower = false, enableRealtime = false }: FollowButtonProps) {
     const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
     const [loading, setLoading] = useState(false);
     const [hovered, setHovered] = useState(false);
@@ -23,9 +24,11 @@ export default function FollowButton({ targetUserId, initialIsFollowing, isFollo
     }, [initialIsFollowing, targetUserId]);
 
     useEffect(() => {
+        if (!enableRealtime) return;
+
         const channel = supabase
             .channel(`user_follows_${targetUserId}`)
-            .on('broadcast', { event: 'interaction_update' }, async (payload) => {
+            .on('broadcast', { event: 'interaction_update' }, async (payload: any) => {
                 const { follower_id } = payload.payload;
                 const { data: { session } } = await supabase.auth.getSession();
                 const currentUserId = session?.user?.id;
@@ -40,7 +43,7 @@ export default function FollowButton({ targetUserId, initialIsFollowing, isFollo
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, [targetUserId, supabase, router]);
+    }, [targetUserId, supabase, router, enableRealtime]);
 
     const handleFollowToggle = async () => {
         if (loading) return;

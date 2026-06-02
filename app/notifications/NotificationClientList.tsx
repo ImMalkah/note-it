@@ -143,7 +143,7 @@ export default function NotificationClientList({ userId, initialNotifications }:
             .on(
                 'broadcast',
                 { event: 'new_notification' },
-                async (payload) => {
+                async (payload: any) => {
                     const newNotif = payload.payload as unknown as Notification;
 
                     if (newNotif && newNotif.actor) {

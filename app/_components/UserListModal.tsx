@@ -83,7 +83,7 @@ export default function UserListModal({ isOpen, onClose, title, type, targetId }
                         .in("following_id", userIds);
 
                     if (followingData) {
-                        const followingSet = new Set(followingData.map(d => d.following_id));
+                        const followingSet = new Set<string>(followingData.map((d: any) => d.following_id as string));
                         setCurrentUserFollowing(followingSet);
                     }
                 }

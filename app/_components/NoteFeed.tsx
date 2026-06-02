@@ -59,17 +59,17 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
             let userSaves = new Set<number>();
 
             if (userId) {
-                const noteIds = newNotes.map(n => n.id);
+                const noteIds = newNotes.map((n: any) => n.id);
                 const [likesRes, savesRes] = await Promise.all([
                     supabase.from("note_likes").select("note_id").eq("user_id", userId).in("note_id", noteIds),
                     supabase.from("saved_notes").select("note_id").eq("user_id", userId).in("note_id", noteIds)
                 ]);
 
-                if (likesRes.data) likesRes.data.forEach(l => userLikes.add(l.note_id));
-                if (savesRes.data) savesRes.data.forEach(s => userSaves.add(s.note_id));
+                if (likesRes.data) likesRes.data.forEach((l: any) => userLikes.add(l.note_id));
+                if (savesRes.data) savesRes.data.forEach((s: any) => userSaves.add(s.note_id));
             }
 
-            const formatted = newNotes.map((note) => {
+            const formatted = newNotes.map((note: any) => {
                 const profile = note.profiles as unknown as { username: string, avatar_url: string | null } | null;
                 return {
                     id: note.id as number,
@@ -94,10 +94,10 @@ export default function NoteFeed({ initialNotes, userId }: NoteFeedProps) {
             });
 
             setNotes(prev => {
-                const existingIds = new Set(prev.map(n => n.id));
-                const uniqueNewNotes = formatted.filter(n => !existingIds.has(n.id));
+                const existingIds = new Set(prev.map((n: any) => n.id));
+                const uniqueNewNotes = formatted.filter((n: any) => !existingIds.has(n.id));
                 // Replace (not accumulate) — stagger index stays 0-based per batch
-                setCurrentBatchIds(new Set(uniqueNewNotes.map(n => n.id)));
+                setCurrentBatchIds(new Set(uniqueNewNotes.map((n: any) => n.id)));
                 return [...prev, ...uniqueNewNotes];
             });
             setPage(p => p + 1);

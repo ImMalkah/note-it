@@ -551,15 +551,4 @@ a {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
-=======
-/* Note card base and hover transitions (fully GPU accelerated) */
-.note-card {
-  will-change: transform, box-shadow;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.note-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px var(--primary-soft);
->>>>>>> 7c966ac (performance: optimize website loading speed, FPS, and WebSocket connections)
 }

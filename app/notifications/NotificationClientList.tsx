@@ -57,8 +57,8 @@ export default function NotificationClientList({ userId, initialNotifications }:
 
         if (newNotifs && newNotifs.length > 0) {
             setNotifications(prev => {
-                const existingIds = new Set(prev.map(n => n.id));
-                const uniqueNew = newNotifs.filter(n => !existingIds.has(n.id));
+                const existingIds = new Set(prev.map((n: any) => n.id));
+                const uniqueNew = newNotifs.filter((n: any) => !existingIds.has(n.id));
                 return [...prev, ...uniqueNew as unknown as Notification[]];
             });
             setPage(p => p + 1);

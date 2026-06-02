@@ -123,21 +123,21 @@ export default function ProfileTabs({
                 if (activeTab === "notes") {
                     rawNotes = data;
                 } else {
-                    rawNotes = data.map((d: any) => d.notes).filter(n => n);
+                    rawNotes = data.map((d: any) => d.notes).filter((n: any) => n);
                 }
 
                 if (currentUserId && rawNotes.length > 0) {
-                    const ids = rawNotes.map(n => n.id);
+                    const ids = rawNotes.map((n: any) => n.id);
                     const [likesRes, savesRes] = await Promise.all([
                         supabase.from("note_likes").select("note_id").eq("user_id", currentUserId).in("note_id", ids),
                         supabase.from("saved_notes").select("note_id").eq("user_id", currentUserId).in("note_id", ids)
                     ]);
                     
-                    if (likesRes.data) likesRes.data.forEach(l => userLikes.add(l.note_id));
-                    if (savesRes.data) savesRes.data.forEach(s => userSaves.add(s.note_id));
+                    if (likesRes.data) likesRes.data.forEach((l: any) => userLikes.add(l.note_id));
+                    if (savesRes.data) savesRes.data.forEach((s: any) => userSaves.add(s.note_id));
                 }
 
-                const formatted = rawNotes.map(n => ({
+                const formatted = rawNotes.map((n: any) => ({
                     id: n.id,
                     mood: n.mood,
                     content: n.content,
@@ -153,18 +153,18 @@ export default function ProfileTabs({
 
                 if (activeTab === "notes") {
                     setLocalNotes(prev => {
-                        const existingIds = new Set(prev.map(n => n.id));
-                        return [...prev, ...formatted.filter(n => !existingIds.has(n.id))];
+                        const existingIds = new Set(prev.map((n: any) => n.id));
+                        return [...prev, ...formatted.filter((n: any) => !existingIds.has(n.id))];
                     });
                 } else if (activeTab === "saved") {
                     setLocalSaved(prev => {
-                        const existingIds = new Set(prev.map(n => n.id));
-                        return [...prev, ...formatted.filter(n => !existingIds.has(n.id))];
+                        const existingIds = new Set(prev.map((n: any) => n.id));
+                        return [...prev, ...formatted.filter((n: any) => !existingIds.has(n.id))];
                     });
                 } else if (activeTab === "liked") {
                     setLocalLiked(prev => {
-                        const existingIds = new Set(prev.map(n => n.id));
-                        return [...prev, ...formatted.filter(n => !existingIds.has(n.id))];
+                        const existingIds = new Set(prev.map((n: any) => n.id));
+                        return [...prev, ...formatted.filter((n: any) => !existingIds.has(n.id))];
                     });
                 }
 

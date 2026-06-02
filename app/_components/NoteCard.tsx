@@ -90,10 +90,9 @@ export default function NoteCard({
             className={index >= 0 ? "hover-glass-card animate-fade-in-up" : "hover-glass-card"}
             onPointerDown={handlePointerDown}
             onClick={handleClick}
+            onMouseEnter={() => router.prefetch(`/note/${id}`)}
             style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                backdropFilter: "blur(20px) saturate(180%)",
-                WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                background: "var(--surface)",
                 border: "1px solid rgba(255, 255, 255, 0.08)",
                 boxShadow: "0 15px 35px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
                 borderRadius: "24px",

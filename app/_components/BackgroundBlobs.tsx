@@ -14,7 +14,6 @@ export default function BackgroundBlobs() {
           filter: "blur(140px)",
           opacity: 0.35,
           borderRadius: "50%",
-          animation: "float 15s ease-in-out infinite",
         }}
       />
       <div 
@@ -30,7 +29,6 @@ export default function BackgroundBlobs() {
           filter: "blur(160px)",
           opacity: 0.25,
           borderRadius: "50%",
-          animation: "float 18s ease-in-out infinite reverse",
         }}
       />
     </div>
